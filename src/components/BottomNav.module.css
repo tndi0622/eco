@@ -1,0 +1,63 @@
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 2rem;
+    background-color: var(--background-white);
+    border-top: 1px solid #F2F2F2;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+    padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.65rem;
+    color: #BDBDBD;
+    gap: 6px;
+    text-decoration: none;
+    width: 3rem;
+}
+
+.active {
+    color: #BDBDBD;
+}
+
+.active svg path {
+    fill: var(--primary-green);
+    /* Target the fill of the svg path */
+}
+
+/* Ensure inactive icons are gray */
+.item svg path {
+    fill: #BDBDBD;
+}
+
+/* Wait, wireframe icons are filled black or specific color? 
+   Screen 1: Home is Green/White cutout? No, looks like a house. 
+   Screen 2: Chat icon is regular.
+   Screen 3: Calendar icon is solid/outlined?
+   Screen 4: Settings.
+   Active state in wireframe: Icon is Green.
+   Inactive state: Icon seems Black in some (Screen 1 Chat/Calendar/Settings seem Black?). 
+   Let's check Screen 1 again. 
+   Home: Green. Chat: Black. Calendar: Black. Settings: Black.
+   Okay, inactive is Black (#333333), active is Green (#27AE60).
+*/
+
+.item {
+    color: #828282;
+    /* Text color */
+}
+
+.item svg path {
+    fill: var(--text-black);
+}
+
+.active svg path {
+    fill: var(--primary-green);
+}

@@ -1,0 +1,119 @@
+.container {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.calendarCard {
+    width: 100%;
+    border: 1px solid #E0E0E0;
+    border-radius: 16px;
+    padding: 1.5rem;
+    background-color: var(--background-white);
+}
+
+.header {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navBtn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 1rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.dayName {
+    color: #828282;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.dayName.sunday {
+    color: #EB5757;
+}
+
+.dayName.saturday {
+    color: #2D9CDB;
+}
+
+.day {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.day.empty {
+    cursor: default;
+}
+
+.active {
+    border: 1px solid #27AE60;
+    /* Changed to Green for Today active state as per eco theme, or keep blue? Let's keep blue if user didn't ask active to change but asked for Sat/Sun colors */
+    border: 1px solid #2D9CDB;
+    color: #2D9CDB;
+    font-weight: 700;
+}
+
+/* Re-applying my thought: User asked for Sat=Blue, Sun=Red. */
+/* Just text color should be red/blue for dates too? usually yes. */
+
+.sunday {
+    color: #EB5757;
+}
+
+.saturday {
+    color: #2D9CDB;
+}
+
+.infoSection {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.alertBox {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.recycling {
+    background-color: #6FCF97;
+    color: #fff;
+}
+
+.holiday {
+    background-color: #FF8A8A;
+    color: #fff;
+}
+
+.holidayText {
+    color: #EB5757 !important;
+}
