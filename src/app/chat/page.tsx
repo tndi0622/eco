@@ -18,12 +18,25 @@ export default function Chat() {
         const cleanText = text.replace(/[?.!,]/g, '').trim();
         const words = cleanText.split(' ').filter(w => w.trim().length > 0);
 
-        // Scan backwards for a word with a particle
-        const particles = ['은', '는', '이', '가', '을', '를', '도', '만', '로', '으로'];
+        // Scan for particles with priority (Object > Topic > Subject)
+        // This handles "소파를 버리고싶은데 폐기물스티커가 필요해?" -> Picks "소파" (has '를') instead of "폐기물스티커" (has '가')
 
-        for (let i = words.length - 1; i >= 0; i--) {
-            let word = words[i];
-            for (const particle of particles) {
+        // 1. Object markers (을/를) - Highest priority
+        for (const word of words) {
+            if (word.endsWith('을') && word.length > 1) return word.slice(0, -1);
+            if (word.endsWith('를') && word.length > 1) return word.slice(0, -1);
+        }
+
+        // 2. Topic markers (은/는)
+        for (const word of words) {
+            if (word.endsWith('은') && word.length > 1) return word.slice(0, -1);
+            if (word.endsWith('는') && word.length > 1) return word.slice(0, -1);
+        }
+
+        // 3. Subject markers (이/가) & others
+        const otherParticles = ['이', '가', '도', '만', '로', '으로'];
+        for (const word of words) {
+            for (const particle of otherParticles) {
                 if (word.endsWith(particle) && word.length > particle.length) {
                     return word.slice(0, -particle.length);
                 }

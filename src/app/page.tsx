@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import SplashScreen from '@/components/SplashScreen';
+import { useLocation } from '@/context/LocationContext';
 
 export default function Home() {
   const [searchValue, setSearchValue] = useState('');
   const [showSplash, setShowSplash] = useState(true);
+  const { location } = useLocation();
   const router = useRouter();
 
   useEffect(() => {
@@ -58,7 +60,9 @@ export default function Home() {
       </form>
 
       <section>
-        <h2 className={styles.sectionTitle}>오늘의 우리 동네</h2>
+        <h2 className={styles.sectionTitle}>
+          {location && location !== '위치 설정이 필요합니다' ? `${location}의 오늘` : '오늘의 우리 동네'}
+        </h2>
         <div className={styles.infoCard}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3 4.9 3 6V20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8Z" fill="black" />

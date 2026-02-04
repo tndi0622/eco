@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { ChatProvider } from '@/context/ChatContext';
+import { LocationProvider } from '@/context/LocationContext';
 
 const notoSansKr = Noto_Sans_KR({
   preload: false,
@@ -25,11 +26,13 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={notoSansKr.className}>
-        <ChatProvider>
-          <Header />
-          <main>{children}</main>
-          <BottomNav />
-        </ChatProvider>
+        <LocationProvider>
+          <ChatProvider>
+            <Header />
+            <main>{children}</main>
+            <BottomNav />
+          </ChatProvider>
+        </LocationProvider>
       </body>
     </html>
   );
