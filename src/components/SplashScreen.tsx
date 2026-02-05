@@ -31,14 +31,11 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 <div className={styles.ripple}></div>
 
                 <div className={styles.robot}>
-                    {/* Cute Bubble Robot Face */}
-                    <div className={styles.face}>
-                        <div className={styles.eyes}>
-                            <div className={styles.eye} />
-                            <div className={styles.eye} />
-                        </div>
-                        <div className={styles.mouth} />
-                    </div>
+                    <img
+                        src="/images/eco_mascot_welcome.png"
+                        alt="Eco Helper"
+                        className={styles.mascotImage}
+                    />
                 </div>
             </div>
 

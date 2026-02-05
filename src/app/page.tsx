@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import SplashScreen from '@/components/SplashScreen';
 import { useLocation } from '@/context/LocationContext';
+import ChatbotButton from '@/components/ChatbotButton';
 
 export default function Home() {
   const [searchValue, setSearchValue] = useState('');
@@ -98,6 +99,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <ChatbotButton />
     </div>
   );
 }

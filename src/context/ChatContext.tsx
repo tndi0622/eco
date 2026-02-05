@@ -7,6 +7,7 @@ export interface Message {
     type: 'user' | 'bot';
     content: React.ReactNode;
     source?: string;
+    avatarUrl?: string;
 }
 
 interface ChatContextType {
