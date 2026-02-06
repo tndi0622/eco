@@ -1,0 +1,194 @@
+/* Copying styles from Calendar page essentially */
+.ecoDashboard {
+    background: linear-gradient(135deg, #27AE60 0%, #2D9CDB 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 10px rgba(39, 174, 96, 0.2);
+    transition: transform 0.2s;
+    margin-bottom: 1.5rem;
+    /* Add margin for spacing */
+}
+
+.ecoDashboard:active {
+    transform: scale(0.98);
+}
+
+.dashboardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.userName {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.levelBadge {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.statsGrid {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.statItem {
+    text-align: center;
+}
+
+.statValue {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.2rem;
+}
+
+.statLabel {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.statDivider {
+    width: 1px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.progressBarContainer {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progressBarFill {
+    height: 100%;
+    background-color: #F2C94C;
+    /* Gold/Yellow for progress */
+    border-radius: 4px;
+}
+
+.progressText {
+    font-size: 0.8rem;
+    text-align: right;
+    opacity: 0.9;
+}
+
+/* History Modal Overlay */
+.historyModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    /* Higher z-index for global priority */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.historyCard {
+    background-color: white;
+    width: 100%;
+    max-width: 320px;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.historyHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.historyHeader h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #888;
+    cursor: pointer;
+}
+
+.historyList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.historyItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.historyDate {
+    font-size: 0.8rem;
+    color: #888;
+    width: 80px;
+}
+
+.historyDesc {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 600;
+    text-align: left;
+}
+
+.historyPoint {
+    font-size: 0.9rem;
+    color: #27AE60;
+    font-weight: 800;
+    margin-left: 0.5rem;
+}
+
+.historyFooter {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+    background-color: #f5f5f5;
+    padding: 0.8rem;
+    border-radius: 12px;
+}

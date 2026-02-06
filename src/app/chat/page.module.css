@@ -1,140 +1,20 @@
 .container {
-    padding: 1.5rem;
-    padding-bottom: 5rem;
+    padding: 0;
+    height: calc(100vh - 80px);
+    /* Adjust for header/nav */
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    background-color: #F8F9FA;
 }
 
 .messagesArea {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    padding-bottom: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    flex: 1;
-}
-
-.messageWrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: 80%;
-}
-
-.userWrapper {
-    align-self: flex-end;
-    align-items: flex-end;
-}
-
-.botWrapper {
-    align-self: flex-start;
-    align-items: flex-start;
-}
-
-.bubble {
-    padding: 1rem;
-    border-radius: 12px;
-    font-size: 1rem;
-    line-height: 1.5;
-    position: relative;
-}
-
-.userBubble {
-    background-color: var(--primary-green);
-    /* Changed to green for better look based on Eco theme */
-    color: white;
-    /* White text on green */
-    border-top-right-radius: 0;
-    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
-}
-
-.botBubble {
-    background-color: var(--background-white);
-    border: 1px solid #F2F2F2;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border-top-left-radius: 0;
-}
-
-.botHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--primary-green);
-}
-
-.botHeader svg path {
-    fill: var(--primary-green);
-}
-
-.botAvatar {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-}
-
-.inputArea {
-    position: fixed;
-    bottom: 0px;
-    /* Aligned with bottom of viewport, but above BottomNav? No, Chat page usually hides BottomNav or sits above it. */
-    bottom: 60px;
-    /* Above BottomNav */
-    left: 0;
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--background-white);
-    z-index: 90;
-    /* Add subtle blur or gradient if desired, but keeping clean */
-}
-
-.inputWrapper {
-    display: flex;
-    align-items: center;
-    background-color: var(--background-white);
-    border-radius: 30px;
-    /* More rounded pill shape */
-    padding: 0.8rem 1.2rem;
-    gap: 0.8rem;
-    border: 1px solid #E0E0E0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: box-shadow 0.2s, border-color 0.2s;
-}
-
-.inputWrapper:focus-within {
-    border-color: var(--primary-green);
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.15);
-}
-
-.micIcon {
-    color: #828282;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.micIcon:hover {
-    color: var(--primary-green);
-}
-
-.input {
-    flex: 1;
-    border: none;
-    background: none;
-    font-size: 1rem;
-    outline: none;
-    font-family: inherit;
-}
-
-.input::placeholder {
-    color: #BDBDBD;
-}
-
-.source {
-    font-size: 0.75rem;
-    color: #828282;
-    margin-top: 0.5rem;
-    border-top: 1px solid #F2F2F2;
-    padding-top: 0.5rem;
 }
 
 .emptyState {
@@ -142,29 +22,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+    height: 100%;
+    margin-top: 2rem;
     text-align: center;
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .mascotContainer {
-    width: 150px;
-    height: 150px;
+    width: 120px;
+    height: 120px;
     margin-bottom: 1.5rem;
-    position: relative;
 }
 
 .mascotImage {
@@ -174,33 +40,33 @@
 }
 
 .welcomeText {
-    font-size: 1.2rem;
-    color: #333;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
 }
 
 .subText {
     font-size: 1rem;
-    color: #828282;
+    color: #666;
     margin-bottom: 2rem;
 }
 
 .suggestions {
     display: flex;
+    gap: 0.8rem;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.8rem;
-    max-width: 300px;
+    max-width: 320px;
 }
 
 .chip {
-    padding: 0.6rem 1rem;
     background-color: white;
     border: 1px solid #E0E0E0;
+    padding: 0.6rem 1rem;
     border-radius: 20px;
     font-size: 0.9rem;
-    color: #4F4F4F;
+    color: #333;
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -211,5 +77,242 @@
     color: white;
     border-color: var(--primary-green);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+.messageWrapper {
+    display: flex;
+    width: 100%;
+}
+
+.userWrapper {
+    justify-content: flex-end;
+}
+
+.botWrapper {
+    justify-content: flex-start;
+}
+
+.bubble {
+    max-width: 85%;
+    padding: 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.userBubble {
+    background-color: var(--primary-green);
+    /* Use standard green */
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+}
+
+.botBubble {
+    background-color: white;
+    color: #333;
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid #E0E0E0;
+}
+
+.botHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-green);
+    margin-bottom: 0.5rem;
+}
+
+.botAvatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.source {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 0.5rem;
+    text-align: right;
+}
+
+/* Input Area */
+.inputArea {
+    background-color: white;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #E0E0E0;
+}
+
+.inputWrapper {
+    display: flex;
+    align-items: center;
+    background-color: #F8F9FA;
+    border-radius: 28px;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #E0E0E0;
+}
+
+.inputWrapper:focus-within {
+    border-color: var(--primary-green);
+    background-color: white;
+}
+
+.cameraIcon {
+    background: none;
+    border: none;
+    color: #666;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.cameraIcon:hover {
+    color: var(--primary-green);
+}
+
+.micIconBtn {
+    background: none;
+    border: none;
+    color: #666;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.micIconBtn:hover {
+    color: var(--primary-green);
+}
+
+.input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.5rem 0.8rem;
+    font-size: 1rem;
+    outline: none;
+    color: #333;
+}
+
+.input::placeholder {
+    color: #BDBDBD;
+}
+
+.sendBtn {
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.sendBtn:hover {
+    transform: scale(1.05);
+}
+
+.sendBtn svg {
+    margin-left: 2px;
+    /* Visual centering */
+}
+
+/* New Plus Button & Menu Styles */
+.plusBtn {
+    background: none;
+    border: none;
+    color: #666;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.plusBtn:hover {
+    color: var(--primary-green);
+    background-color: #F0F0F0;
+    border-radius: 50%;
+}
+
+.plusBtn.active {
+    transform: rotate(45deg);
+    color: var(--primary-green);
+}
+
+.inputArea {
+    position: relative;
+    /* For absolute positioning of attach menu */
+    background-color: white;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #E0E0E0;
+    z-index: 10;
+}
+
+.attachMenu {
+    position: absolute;
+    bottom: 80px;
+    /* Above the input bar approx */
+    left: 1.5rem;
+    background-color: white;
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    gap: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.2s ease-in-out;
+}
+
+.attachMenu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.attachBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #555;
+    font-size: 0.8rem;
+}
+
+.attachBtn:hover {
+    color: var(--primary-green);
+}
+
+.attachIconCircle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #F5F5F5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.attachBtn:hover .attachIconCircle {
+    background-color: #E8F5E9;
+    /* Light green */
 }

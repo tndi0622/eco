@@ -18,6 +18,15 @@
     gap: 0.5rem;
     color: var(--text-black);
     width: 100%;
+    cursor: pointer;
+}
+
+.locationText {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60vw;
+    /* Responsive truncation */
 }
 
 .refresh {
@@ -29,6 +38,7 @@
     border: none;
     cursor: pointer;
     margin-left: 1rem;
+    min-width: 24px;
 }
 
 .editWrapper {

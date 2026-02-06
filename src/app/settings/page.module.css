@@ -3,6 +3,7 @@
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    padding-bottom: 90px;
 }
 
 .section {
@@ -56,6 +57,45 @@
 
 .toggle.active .toggleHandle {
     transform: translateX(22px);
+}
+
+.contactList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.contactItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #FAFAFA;
+    border-radius: 12px;
+    border: 1px solid #EEEEEE;
+}
+
+.deptName {
+    display: block;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.deptRole {
+    display: block;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.callBtn {
+    background-color: #2D9CDB;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
 }
 
 .colors {

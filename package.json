@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "csv-parse": "^6.1.0",
     "date-holidays": "^3.26.8",
+    "iconv-lite": "^0.7.2",
     "next": "16.1.6",
     "react": "19.2.3",
+    "react-daum-postcode": "^3.2.0",
     "react-dom": "19.2.3",
     "xml2js": "^0.6.2"
   },

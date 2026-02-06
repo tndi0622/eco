@@ -28,6 +28,8 @@ const SettingsIcon = () => (
     </svg>
 );
 
+
+
 export default function BottomNav() {
     const pathname = usePathname();
 
@@ -35,6 +37,7 @@ export default function BottomNav() {
         { name: '홈', path: '/', icon: <HomeIcon /> },
         { name: '채팅', path: '/chat', icon: <ChatIcon /> },
         { name: '캘린더', path: '/calendar', icon: <CalendarIcon /> },
+
         { name: '설정', path: '/settings', icon: <SettingsIcon /> },
     ];
 
@@ -53,3 +56,4 @@ export default function BottomNav() {
         </nav>
     );
 }
+
