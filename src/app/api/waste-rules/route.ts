@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import wasteRules from '@/data/waste_rules.json';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -12,10 +13,35 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Filter rules from local JSON
-        let items = (wasteRules as any[]).filter((rule: any) => {
-            return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
-        });
+        let items: any[] = [];
+        let source = 'json';
+
+        // 1. Try Supabase
+        if (supabase) {
+            try {
+                // Must handle URL encoding for ilike? No, supabase client handles it.
+                const { data, error } = await supabase
+                    .from('waste_rules')
+                    .select('*')
+                    .ilike('sido', `%${sido}%`)
+                    .ilike('sigungu', `%${sigungu}%`);
+
+                if (!error && data) {
+                    items = data;
+                    source = 'supabase';
+                }
+            } catch (err) {
+                console.error("Supabase Fetch Error:", err);
+            }
+        }
+
+        // 2. Fallback to Local JSON
+        if (items.length === 0) {
+            source = 'json';
+            items = (wasteRules as any[]).filter((rule: any) => {
+                return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
+            });
+        }
 
         // If dong provided, sort to prioritize dong-specific rules
         if (dong && items.length > 1) {
@@ -28,11 +54,6 @@ export async function GET(request: Request) {
                 if (!aHasDong && bHasDong) return 1;
 
                 // 2. Prefer specific matches over generic ones?
-                // Actually, if we found a dong match, we took it.
-                // If neither matches, we might prefer "Generic/Empty" over "Some Other Dong".
-                // Example: User is "Sajik-dong". Items: "Gahoe-dong (specific)", "Jongno-gu (generic)"
-                // We should prefer Generic if Specific doesn't match.
-
                 const aIsGeneric = !a.emdNm || a.emdNm === "";
                 const bIsGeneric = !b.emdNm || b.emdNm === "";
 
@@ -43,9 +64,11 @@ export async function GET(request: Request) {
             });
         }
 
-        // Debug: console.log(`Found ${items.length} rules for ${sido} ${sigungu} ${dong || ''}`);
-
-        return NextResponse.json({ rules: items });
+        return NextResponse.json({ rules: items, source }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=59'
+            }
+        });
 
     } catch (error: any) {
         console.error('Waste Rules Local Error:', error);

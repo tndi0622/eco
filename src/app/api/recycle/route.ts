@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import wasteRules from '@/data/waste_rules.json';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -24,16 +25,19 @@ export async function GET(request: Request) {
 
     // Helper: Parse Location
     const parseLocation = (loc: string | null) => {
-        if (!loc || loc.includes('위치')) return { sido: '', sigungu: '' };
+        if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
         const parts = loc.split(' ');
-        // E.g. "대구광역시 중구 국채보상로" -> Sido: 대구광역시, Sigungu: 중구
         return {
             sido: parts[0] || '',
-            sigungu: parts[1] || ''
+            sigungu: parts[1] || '',
+            dong: parts[2] || ''
         };
     };
 
-    const { sido, sigungu } = parseLocation(location);
+    const { sido, sigungu, dong } = parseLocation(location);
+
+
+
 
     // Helper: Timeout Wrapper
     const fetchWithTimeout = async (url: string, ms: number = 2500) => {
@@ -111,15 +115,49 @@ export async function GET(request: Request) {
     if (publicDataResult.status === 'fulfilled') publicDataItems = publicDataResult.value;
     if (collectionDataResult.status === 'fulfilled') collectionPointItems = collectionDataResult.value;
 
-    // C. Local JSON Lookup (Sync & Fast)
+    // C. Local JSON Lookup (Sync & Fast) - Enhanced with Supabase & Dong Logic
     if (sido) {
         try {
-            const items = (wasteRules as any[]).filter((rule: any) => {
-                return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
-            });
+            let items: any[] = [];
+
+            // 1. Try Supabase
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('waste_rules')
+                        .select('*')
+                        .ilike('sido', `%${sido}%`)
+                        .ilike('sigungu', `%${sigungu}%`);
+                    if (!error && data) items = data;
+                } catch (e) { console.error("Recycle Supabase Error", e); }
+            }
+
+            // 2. Fallback to Local JSON
+            if (items.length === 0) {
+                items = (wasteRules as any[]).filter((rule: any) => {
+                    return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
+                });
+            }
+
+            // 3. Sort by Dong Priority
+            if (dong && items.length > 1) {
+                items.sort((a, b) => {
+                    const aHasDong = a.emdNm && a.emdNm.includes(dong);
+                    const bHasDong = b.emdNm && b.emdNm.includes(dong);
+                    if (aHasDong && !bHasDong) return -1;
+                    if (!aHasDong && bHasDong) return 1;
+                    // Generic (empty emdNm) next
+                    const aIsGeneric = !a.emdNm;
+                    const bIsGeneric = !b.emdNm;
+                    if (aIsGeneric && !bIsGeneric) return -1;
+                    if (!aIsGeneric && bIsGeneric) return 1;
+                    return 0;
+                });
+            }
+
             wasteInfoItems = items;
         } catch (e) {
-            console.error("Waste Info Local Error:", e);
+            console.error("Waste Info Lookup Error:", e);
         }
     }
 
@@ -137,7 +175,7 @@ export async function GET(request: Request) {
                 `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`
             ).join('\n');
 
-            const ruleContext = wasteInfoItems.map(item =>
+            const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
                 `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime})`
             ).join('\n');
 

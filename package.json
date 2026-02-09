@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.95.3",
     "csv-parse": "^6.1.0",
     "date-holidays": "^3.26.8",
+    "dotenv": "^17.2.4",
     "iconv-lite": "^0.7.2",
     "next": "16.1.6",
     "react": "19.2.3",
