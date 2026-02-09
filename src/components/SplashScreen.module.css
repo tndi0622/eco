@@ -1,6 +1,6 @@
 @keyframes drop {
     0% {
-        transform: translateY(-100vh) scale(1);
+        transform: translateY(-100vh) scale(1) rotate(45deg);
         opacity: 0;
     }
 
@@ -9,12 +9,12 @@
     }
 
     90% {
-        transform: translateY(0vh) scale(1);
+        transform: translateY(0vh) scale(1) rotate(45deg);
         opacity: 1;
     }
 
     100% {
-        transform: translateY(0vh) scale(2, 0);
+        transform: translateY(20px) scale(1.5) rotate(45deg);
         opacity: 0;
     }
 
@@ -24,19 +24,19 @@
 @keyframes rippleStroke {
     0% {
         width: 0px;
-        height: 3px;
+        height: 6px;
         opacity: 1;
     }
 
     50% {
-        width: 100px;
-        height: 3px;
+        width: 200px;
+        height: 6px;
         opacity: 0.5;
     }
 
     100% {
-        width: 150px;
-        height: 3px;
+        width: 300px;
+        height: 6px;
         opacity: 0;
     }
 }
@@ -102,18 +102,18 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
 }
 
 .waterDrop {
-    width: 20px;
-    height: 20px;
+    width: 80px;
+    height: 80px;
     background-color: #2D9CDB;
     border-radius: 0 50% 50% 50%;
     transform: rotate(45deg);
     position: absolute;
-    top: 80px;
+    top: 100px;
     /* Land at impact zone */
     opacity: 0;
     animation: drop 1.5s cubic-bezier(0.5, 0, 1, 1) forwards;
@@ -126,7 +126,7 @@
     bottom: 80px;
     /* Just below robot */
     width: 0px;
-    height: 4px;
+    height: 6px;
     background-color: #2D9CDB;
     border-radius: 50%;
     animation: rippleStroke 0.6s ease-out 1.4s forwards;
@@ -137,8 +137,8 @@
 /* Like a chat bubble with face */
 .robot {
     position: relative;
-    width: 150px;
-    height: 150px;
+    width: 250px;
+    height: 250px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -150,13 +150,14 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    mix-blend-mode: multiply;
 }
 
 
 
 .greetingText {
     margin-top: 2rem;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: #333;
     opacity: 0;

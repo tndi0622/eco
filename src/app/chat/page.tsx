@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { useChat, Message } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
+import ChatSkeleton from './ChatSkeleton';
 
 export default function Chat() {
     const searchParams = useSearchParams();
@@ -17,6 +18,11 @@ export default function Chat() {
 
     // Voice Recognition State
     const [isListening, setIsListening] = useState(false);
+
+    // Bot Thinking State
+    const [isThinking, setIsThinking] = useState(false);
+    const [welcomeMascot, setWelcomeMascot] = useState('/images/eco_mascot_welcome.png');
+    const [loadingMascot, setLoadingMascot] = useState('/images/eco_mascot_thinking.png');
 
     // UI State for Attach Menu
     const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -31,14 +37,21 @@ export default function Chat() {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, isThinking]);
 
     const MASCOT_IMAGES = [
         '/images/eco_mascot_icon.png',
         '/images/eco_mascot_thinking.png',
         '/images/eco_mascot_idea.png',
         '/images/eco_mascot_finish.png',
+        '/images/eco_mascot_welcome.png',
     ];
+
+    useEffect(() => {
+        // Randomize welcome mascot on client mount
+        const randomMascot = MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)];
+        setWelcomeMascot(randomMascot);
+    }, []);
 
     const getJosa = (word: string, josa: '은/는' | '이/가' | '을/를') => {
         if (!word) return '';
@@ -74,9 +87,9 @@ export default function Chat() {
 
     // Updated fetch function to handle Image
     const fetchRecycleInfo = async (queryMock: string, imageBase64?: string) => {
-        // If image is present, we send it to a special endpoint or handle it via POST
-        // For simplicity, let's assume we use POST if image exists, or GET if text only.
-        // Actually, let's use POST for everything to be consistent or keep GET for text.
+        setIsThinking(true);
+        // Randomize loading mascot each time
+        setLoadingMascot(MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)]);
 
         let data;
         let usedKeyword = queryMock;
@@ -168,6 +181,8 @@ export default function Chat() {
         } catch (error) {
             console.error("Chat Error", error);
             addMessage({ id: Date.now(), type: 'bot', content: '오류가 발생했습니다.', avatarUrl: '/images/eco_mascot_no.png' });
+        } finally {
+            setIsThinking(false);
         }
     };
 
@@ -247,6 +262,21 @@ export default function Chat() {
         }
     }, [searchParams]);
 
+    const [chatPlaceholder, setChatPlaceholder] = useState('예: 매트리스, 형광등, 커피찌꺼기');
+
+    useEffect(() => {
+        const examples = [
+            '예: 깨진 유리, 깨진 그릇',
+            '예: 아이스팩, 보냉가방',
+            '예: 매트리스, 대형 가구',
+            '예: 유통기한 지난 약',
+            '예: 프라이팬, 냄비',
+            '예: 형광등, 건전지'
+        ];
+        const randomIndex = Math.floor(Math.random() * examples.length);
+        setChatPlaceholder(examples[randomIndex]);
+    }, []);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
@@ -275,7 +305,7 @@ export default function Chat() {
                 {messages.length === 0 ? (
                     <div className={styles.emptyState}>
                         <div className={styles.mascotContainer}>
-                            <img src="/images/eco_mascot_welcome.png" alt="Welcome" className={styles.mascotImage} />
+                            <img src={welcomeMascot} alt="Welcome" className={styles.mascotImage} />
                         </div>
                         <h2 className={styles.welcomeText}>무엇이든 물어봐주세요!</h2>
 
@@ -297,6 +327,7 @@ export default function Chat() {
                         </div>
                     ))
                 )}
+                {isThinking && <ChatSkeleton avatarUrl={loadingMascot} />}
                 {isListening && <div className={styles.listeningOverlay}>🎤 듣고 있어요...</div>}
                 <div ref={messagesEndRef} />
             </div>
@@ -323,7 +354,7 @@ export default function Chat() {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </button>
 
-                    <input type="text" className={styles.input} placeholder="무엇을 버리시나요?" value={input} onChange={(e) => setInput(e.target.value)} onClick={() => setShowAttachMenu(false)} />
+                    <input type="text" className={styles.input} placeholder={chatPlaceholder} value={input} onChange={(e) => setInput(e.target.value)} onClick={() => setShowAttachMenu(false)} />
 
                     <button type="submit" className={styles.sendBtn}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>

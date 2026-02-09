@@ -116,3 +116,173 @@
 .suggestionItem:hover {
     background-color: #f0f0f0;
 }
+
+/* Location Details Popover */
+.popoverOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(2px);
+}
+
+.popoverContent {
+    background: white;
+    width: 100%;
+    max-width: 360px;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.currentLocationSection {
+    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.currentTitle {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.currentAddress {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.4;
+    word-break: keep-all;
+    color: #333;
+}
+
+.favoritesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.favoritesTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.favoriteList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.favoriteChip {
+    padding: 0.5rem 0.9rem;
+    border-radius: 20px;
+    background: #f7f9fa;
+    border: 1px solid #e1e4e8;
+    font-size: 0.9rem;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.favoriteChip:hover {
+    background: #eef2f5;
+    border-color: #d0d7de;
+}
+
+.actionButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.secondaryBtn {
+    padding: 0.8rem;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    font-weight: 600;
+    cursor: pointer;
+    color: #555;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.secondaryBtn:hover {
+    background: #f5f5f5;
+}
+
+.primaryBtn {
+    padding: 0.8rem;
+    border-radius: 12px;
+    background: #27AE60;
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.primaryBtn:hover {
+    background: #219150;
+    transform: translateY(-1px);
+}
+
+.addBookmarkForm {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 0.5rem;
+    border-radius: 12px;
+}
+
+.bookmarkInput {
+    flex: 1;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.saveBtn {
+    padding: 0.6rem 1rem;
+    background: #27AE60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}

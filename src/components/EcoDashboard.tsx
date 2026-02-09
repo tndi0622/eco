@@ -39,7 +39,7 @@ export default function EcoDashboard() {
                 <div className={styles.progressBarContainer}>
                     <div className={styles.progressBarFill} style={{ width: '20%' }}></div>
                 </div>
-                <div className={styles.progressText}>터치해서 적립 내역 확인하기 👉</div>
+                <div className={styles.progressText}>내가 얼마나 지구를 도왔는지 보기 👉</div>
             </section>
 
             {/* History Modal */}

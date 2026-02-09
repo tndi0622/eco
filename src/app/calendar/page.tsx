@@ -28,6 +28,7 @@ export default function Calendar() {
     };
 
     const [dischargeSchedule, setDischargeSchedule] = useState<{ [key: number]: string }>(defaultSchedule);
+    const [dischargeTime, setDischargeTime] = useState('18:00 ~ 24:00'); // Default time
     const [isApiLoading, setIsApiLoading] = useState(false);
 
     // Parse Helper
@@ -85,16 +86,29 @@ export default function Calendar() {
                 const parts = location.split(' ');
                 const sido = parts[0];
                 const sigungu = parts[1];
+                const dong = parts[2];
 
                 if (sido && sigungu) {
                     try {
-                        const res = await fetch(`/api/waste-rules?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}`);
+                        const res = await fetch(`/api/waste-rules?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}&dong=${encodeURIComponent(dong || '')}`);
                         const data = await res.json();
                         if (data.rules && data.rules.length > 0) {
                             const newSched = parseRulesToSchedule(data.rules);
                             setDischargeSchedule(newSched);
+
+                            // Extract time info
+                            let timeInfo = '';
+                            // Try to find a valid time from any rule
+                            const timeRule = data.rules.find((r: any) => r.gnrlWsteDschrgTime || r.recycleDschrgTime || r.foodWsteDschrgTime);
+                            if (timeRule) {
+                                timeInfo = timeRule.gnrlWsteDschrgTime || timeRule.recycleDschrgTime || timeRule.foodWsteDschrgTime;
+                            }
+                            const formattedTime = timeInfo ? timeInfo.replace('~', ' ~ ') : '18:00 ~ 24:00';
+                            setDischargeTime(formattedTime);
+
                             // Save to local storage to persist recent auto-fetch
                             localStorage.setItem('ecoDischargeSchedule', JSON.stringify(newSched));
+                            localStorage.setItem('ecoDischargeTime', formattedTime);
                         } else {
                             // console.log("No specific rules found, using default or saved");
                             loadSaved();
@@ -117,10 +131,14 @@ export default function Calendar() {
 
     const loadSaved = () => {
         const saved = localStorage.getItem('ecoDischargeSchedule');
+        const savedTime = localStorage.getItem('ecoDischargeTime');
         if (saved) {
             try {
                 setDischargeSchedule(JSON.parse(saved));
             } catch (e) { }
+        }
+        if (savedTime) {
+            setDischargeTime(savedTime);
         }
     };
 
@@ -195,54 +213,58 @@ export default function Calendar() {
         return holidays.some(h => h.date === dateStr);
     };
 
-    const getDayClass = (date: number | null, index: number) => {
-        if (!date) return styles.empty;
-        const colIndex = index % 7;
-        const isSunday = colIndex === 0;
-        const isSaturday = colIndex === 6;
-        const isPublicHoliday = isHoliday(date);
-        let className = styles.day;
-        if (isToday(date)) className += ` ${styles.active}`;
-        if (isPublicHoliday) className += ` ${styles.holidayText}`;
-        else if (isSunday) className += ` ${styles.sunday}`;
-        else if (isSaturday) className += ` ${styles.saturday}`;
-        return className;
+    const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+    const [selectedSchedule, setSelectedSchedule] = useState('');
+
+    // ... (keep existing useEffect for location and API)
+
+    // Helper to check if a date is selected
+    const isSelected = (day: number) => {
+        if (!selectedDate || !day) return false;
+        return (
+            day === selectedDate.getDate() &&
+            month === selectedDate.getMonth() &&
+            year === selectedDate.getFullYear()
+        );
     };
 
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
+    const handleDateClick = (day: number) => {
+        if (!day) return;
+        const newDate = new Date(year, month, day);
+        setSelectedDate(newDate);
 
+        // Update selected schedule info
+        const dayOfWeek = newDate.getDay();
+        setSelectedSchedule(dischargeSchedule[dayOfWeek] || '배출 없음');
+    };
 
+    // Helper to get icons/dots for calendar grid
+    const getDayContent = (day: number) => {
+        if (!day) return null;
+        const currentLoopDate = new Date(year, month, day);
+        const dayOfWeek = currentLoopDate.getDay();
+        const info = dischargeSchedule[dayOfWeek];
+
+        let dotColor = '#ddd'; // Default no discharge
+        if (info.includes('일반')) dotColor = '#27AE60'; // Green
+        else if (info.includes('재활용')) dotColor = '#F2994A'; // Orange
+        else if (info.includes('배출 없음')) dotColor = 'transparent';
+
+        return (
+            <div className={styles.dayContent}>
+                <span className={styles.dayNumber}>{day}</span>
+                {dotColor !== 'transparent' && <div className={styles.dot} style={{ backgroundColor: dotColor }}></div>}
+            </div>
+        );
+    };
 
     return (
         <div className={styles.container}>
-
-            {/* 1. Eco Point / Gamification Dashboard */}
-
-
-            {/* History Modal (Simple Inline Expand for now or absolute overlay) */}
-
-
-            {/* 1. Today's Local Discharge Rule (Location Based + Manual Override) */}
-            <section className={styles.localAlert}>
-                <div className={styles.alertIcon}>📢</div>
-                <div className={styles.alertContent}>
-                    <div className={styles.alertTitle}>
-                        오늘 <strong>{location}</strong> 배출 품목
-                    </div>
-                    <div className={styles.alertText}>
-                        {isApiLoading ? '정보를 불러오는 중...' : dischargeInfo}
-                    </div>
-                </div>
-            </section>
-
-            {/* 3. Calendar */}
+            {/* 1. Calendar Header & Grid */}
             <div className={styles.calendarCard}>
                 <div className={styles.header}>
                     <button onClick={handlePrevMonth} className={styles.navBtn}>&lt;</button>
-                    <span>{year} {monthNames[month]}</span>
+                    <span className={styles.monthTitle}>{year}년 {month + 1}월</span>
                     <button onClick={handleNextMonth} className={styles.navBtn}>&gt;</button>
                 </div>
                 <div className={styles.grid}>
@@ -255,12 +277,47 @@ export default function Calendar() {
                         </div>
                     ))}
                     {calendarDays.map((date, index) => (
-                        <div key={index} className={getDayClass(date, index)}>
-                            {date}
+                        <div
+                            key={index}
+                            className={`${styles.day} ${isToday(date as number) ? styles.today : ''} ${isSelected(date as number) ? styles.selected : ''}`}
+                            onClick={() => handleDateClick(date as number)}
+                        >
+                            {getDayContent(date as number)}
                         </div>
                     ))}
                 </div>
             </div>
+
+            {/* 2. Action Card (Selected Date Info) */}
+            <section className={styles.actionCard}>
+                <div className={styles.actionHeader}>
+                    {selectedDate && (
+                        <div className={styles.selectedDateDisplay}>
+                            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 ({['일', '월', '화', '수', '목', '금', '토'][selectedDate.getDay()]})
+                            {isToday(selectedDate.getDate()) && selectedDate.getMonth() === new Date().getMonth() && <span className={styles.todayBadge}>TODAY</span>}
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.scheduleInfo}>
+                    <div className={styles.infoLabel}>배출 가능 품목</div>
+                    <div className={styles.infoValue}>{selectedSchedule || dischargeSchedule[new Date().getDay()]}</div>
+                </div>
+
+                <div className={styles.metaInfo}>
+                    <span>⏰ {dischargeTime}</span>
+                    <span>📍 {location.split(' ')[1] || '위치 미설정'} 기준</span>
+                </div>
+
+                <div className={styles.buttonGroup}>
+                    {selectedSchedule.includes('대형') && (
+                        <button className={styles.callBtn}>
+                            📞 대형폐기물 신청
+                        </button>
+                    )}
+                    {/* Chat button removed to keep calendar focused on verification */}
+                </div>
+            </section>
         </div>
     );
 }
