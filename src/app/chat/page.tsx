@@ -402,6 +402,14 @@ function ChatContent() {
         fetchRecycleInfo(text);
     };
 
+    const handleFeedback = (type: 'positive' | 'negative') => {
+        if (type === 'positive') {
+            alert("도움이 되었다니 다행이에요! 😊\n더 궁금한 점이 있으시면 언제든 물어봐주세요.");
+        } else {
+            alert("부족한 점을 보완하여 더 똑똑한 에코도우미가 될게요! 😢\n정확한 정보는 관할 구청에 다시 한 번 확인 부탁드려요.");
+        }
+    };
+
     return (
         <div className={styles.container}>
             <input
@@ -451,11 +459,11 @@ function ChatContent() {
                                             📚 {msg.source || '출처: 환경부 재활용품 분리배출 가이드라인 (2025)'}
                                         </div>
                                         <div className={styles.feedbackContainer}>
-                                            <button className={styles.feedbackBtn}>
+                                            <button className={styles.feedbackBtn} onClick={() => handleFeedback('positive')}>
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
                                                 도움됨
                                             </button>
-                                            <button className={styles.feedbackBtn}>
+                                            <button className={styles.feedbackBtn} onClick={() => handleFeedback('negative')}>
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
                                                 아쉬움
                                             </button>
