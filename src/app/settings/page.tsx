@@ -6,11 +6,12 @@ import { useLocation } from '@/context/LocationContext';
 import AddressSearch from '@/components/AddressSearch';
 
 export default function Settings() {
-    const { location, favorites, addFavorite, removeFavorite, promoteFavorite, detectLocation } = useLocation();
+    const { location, favorites, addFavorite, removeFavorite, updateFavorite, promoteFavorite, detectLocation } = useLocation();
     const [showAddressSearch, setShowAddressSearch] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
     const [newName, setNewName] = useState('');
+    const [editTarget, setEditTarget] = useState<{ name: string, address: string } | null>(null);
 
     const [contactInfo, setContactInfo] = useState<{ name: string, phone: string } | null>(null);
 
@@ -114,23 +115,43 @@ export default function Settings() {
     const handleAddressPicked = (addr: string) => {
         setPendingAddress(addr);
         setShowAddressSearch(false);
-        setNewName(''); // Reset name
+        // Only clear name if adding new (not editing)
+        if (!editTarget) {
+            setNewName('');
+        }
         setShowNameModal(true);
     };
 
     const handleDetectLocation = async () => {
-        const addr = await detectLocation(); // Returns Promise<string>
-        if (addr && !addr.includes('실패') && !addr.includes('미지원')) {
-            handleAddressPicked(addr); // Proceed to name modal with detected address
+        const { address, error } = await detectLocation();
+        if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
+            handleAddressPicked(address); // Proceed to name modal with detected address
         } else {
-            alert(addr); // Show error message
+            alert(address || error || "위치 확인 실패"); // Show error message
         }
+    };
+
+    const handleEditClick = (fav: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditTarget(fav);
+        setNewName(fav.name);
+        setPendingAddress(fav.address);
+        setShowNameModal(true);
     };
 
     const handleSaveLocation = () => {
         if (!newName.trim()) return;
-        addFavorite(newName, pendingAddress);
-        // Automatically set as active location
+
+        if (editTarget) {
+            // Update existing
+            updateFavorite(editTarget.name, newName, pendingAddress);
+            setEditTarget(null);
+        } else {
+            // Add new
+            addFavorite(newName, pendingAddress);
+        }
+
+        // Automatically set as active location (both add and edit)
         promoteFavorite(newName);
 
         setShowNameModal(false);
@@ -200,15 +221,24 @@ export default function Settings() {
                                         </span>
                                         <span className={styles.locationAddr}>{fav.address}</span>
                                     </div>
-                                    <button
-                                        className={styles.deleteBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteLocation(fav.name);
-                                        }}
-                                    >
-                                        삭제
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            className={styles.deleteBtn}
+                                            style={{ backgroundColor: '#f1f3f5', color: '#333', border: '1px solid #ddd' }}
+                                            onClick={(e) => handleEditClick(fav, e)}
+                                        >
+                                            수정
+                                        </button>
+                                        <button
+                                            className={styles.deleteBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteLocation(fav.name);
+                                            }}
+                                        >
+                                            삭제
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             <button className={styles.addBtnOutline} onClick={() => setShowAddressSearch(true)}>
@@ -290,16 +320,36 @@ export default function Settings() {
             {showNameModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>
-                        <div className={styles.modalTitle}>이 위치의 이름은 무엇인가요?</div>
-                        <input
-                            className={styles.modalInput}
-                            placeholder="예: 우리집, 회사, 본가"
-                            value={newName}
-                            onChange={(e) => setNewName(e.target.value)}
-                            autoFocus
-                        />
+                        <div className={styles.modalTitle}>{editTarget ? '위치 수정' : '이 위치의 이름은 무엇인가요?'}</div>
+
+                        <div style={{ marginBottom: '1rem', textAlign: 'left' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#666', marginBottom: '0.3rem' }}>주소</label>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div style={{ flex: 1, fontSize: '0.9rem', padding: '0.6rem', backgroundColor: '#f8f9fa', borderRadius: '6px', color: '#333', wordBreak: 'keep-all', lineHeight: '1.4' }}>
+                                    {pendingAddress}
+                                </div>
+                                <button
+                                    onClick={() => { setShowAddressSearch(true); setShowNameModal(false); }}
+                                    style={{ whiteSpace: 'nowrap', padding: '0.6rem 0.8rem', fontSize: '0.85rem', border: '1px solid #dee2e6', borderRadius: '6px', background: 'white', cursor: 'pointer', color: '#495057' }}
+                                >
+                                    주소 변경
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#666', marginBottom: '0.3rem' }}>이름</label>
+                            <input
+                                className={styles.modalInput}
+                                placeholder="예: 우리집, 회사, 본가"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+
                         <div className={styles.modalActions}>
-                            <button className={styles.modalCancel} onClick={() => setShowNameModal(false)}>취소</button>
+                            <button className={styles.modalCancel} onClick={() => { setShowNameModal(false); setEditTarget(null); }}>취소</button>
                             <button className={styles.modalSave} onClick={handleSaveLocation}>저장하기</button>
                         </div>
                     </div>

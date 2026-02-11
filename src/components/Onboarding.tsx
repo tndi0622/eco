@@ -10,7 +10,7 @@ interface OnboardingProps {
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
     const [step, setStep] = useState(0);
-    const { detectLocation } = useLocation();
+    const { detectLocation, addFavorite } = useLocation();
     const [isLoading, setIsLoading] = useState(false);
 
     const steps = [
@@ -38,11 +38,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         if (step === 1) {
             // Location Step
             setIsLoading(true);
-            const result = await detectLocation();
+            const { address, coordinates, error } = await detectLocation();
             setIsLoading(false);
 
-            if (result && !result.includes('실패') && !result.includes('미지원')) {
-                // Success - Move to next step
+            if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
+                // Success - Save as '우리 집' automatically
+                // Passing coordinates ensures weather/map features work better if added later
+                addFavorite("우리 집", address, coordinates || undefined);
                 setStep(step + 1);
             } else {
                 // Fail - Just move next (fallback to manual settings later)
