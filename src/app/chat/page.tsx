@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { useChat } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
 import ChatSkeleton from './ChatSkeleton';
 
-export default function Chat() {
+function ChatContent() {
     const searchParams = useSearchParams();
     const lastHandledQuery = useRef<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -502,5 +502,13 @@ export default function Chat() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function Chat() {
+    return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '2rem', color: '#666' }}>로딩중...</div>}>
+            <ChatContent />
+        </Suspense>
     );
 }
