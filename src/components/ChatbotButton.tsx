@@ -14,7 +14,7 @@ export default function ChatbotButton() {
         <button className={styles.container} onClick={handleClick} aria-label="Open Chatbot">
             <span className={styles.tooltip}>무엇이든 물어보세요!</span>
             <img
-                src="/images/eco_mascot_icon.png"
+                src="/images/eco_mascot_welcome.png"
                 alt="Chatbot"
                 className={styles.icon}
                 onError={(e) => {

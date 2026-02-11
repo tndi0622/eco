@@ -42,7 +42,6 @@ function ChatContent() {
     }, [messages, isThinking]);
 
     const MASCOT_IMAGES = [
-        '/images/eco_mascot_icon.png',
         '/images/eco_mascot_thinking.png',
         '/images/eco_mascot_idea.png',
         '/images/eco_mascot_finish.png',
@@ -172,7 +171,7 @@ function ChatContent() {
                             </ul>
                         </div>
                     );
-                    addMessage({ id: Date.now(), type: 'bot', content, source, avatarUrl: MASCOT_IMAGES[1] });
+                    addMessage({ id: Date.now(), type: 'bot', content, source, avatarUrl: MASCOT_IMAGES[0] });
                 } else {
                     addMessage({
                         id: Date.now(),
