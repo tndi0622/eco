@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request: Request) {
-    const { image, location } = await request.json();
+    const { image, location, mimeType } = await request.json();
 
     if (!image) {
         return NextResponse.json({ error: 'Image is required' }, { status: 400 });
@@ -16,8 +16,8 @@ export async function POST(request: Request) {
 
     try {
         const genAI = new GoogleGenerativeAI(geminiKey);
-        // Use gemini-1.5-flash for vision capabilities
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Use gemini-2.5-flash-lite as requested by user
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         const prompt = `
             당신은 친절한 환경 마스코트 '에코'입니다.
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         const imagePart = {
             inlineData: {
                 data: image,
-                mimeType: "image/jpeg"
+                mimeType: mimeType || "image/jpeg"
             },
         };
 

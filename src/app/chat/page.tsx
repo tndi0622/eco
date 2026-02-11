@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
-import { useChat, Message } from '@/context/ChatContext';
+import { useChat } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
 import ChatSkeleton from './ChatSkeleton';
 
@@ -86,7 +86,7 @@ export default function Chat() {
     };
 
     // Updated fetch function to handle Image
-    const fetchRecycleInfo = async (queryMock: string, imageBase64?: string) => {
+    const fetchRecycleInfo = async (queryMock: string, imageBase64?: string, mimeType?: string) => {
         setIsThinking(true);
         // Randomize loading mascot each time
         setLoadingMascot(MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)]);
@@ -101,7 +101,7 @@ export default function Chat() {
                 const res = await fetch('/api/vision', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: imageBase64, location }) // Send location too
+                    body: JSON.stringify({ image: imageBase64, mimeType, location }) // Send location too
                 });
                 data = await res.json();
                 usedKeyword = "이미지 분석 결과";
@@ -172,10 +172,62 @@ export default function Chat() {
                     );
                     addMessage({ id: Date.now(), type: 'bot', content, source, avatarUrl: MASCOT_IMAGES[1] });
                 } else {
-                    addMessage({ id: Date.now(), type: 'bot', content: '관련 정보를 찾지 못했어요.', avatarUrl: '/images/eco_mascot_no.png' });
+                    addMessage({
+                        id: Date.now(),
+                        type: 'bot',
+                        content: (
+                            <div>
+                                <p>죄송합니다. 관련 정보를 찾지 못했어요. 😥</p>
+                                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                                    정확한 배출 방법은 관할 구청에 문의해보시는 게 가장 정확해요.
+                                </p>
+                                <a
+                                    href="tel:120"
+                                    style={{
+                                        display: 'inline-block',
+                                        marginTop: '1rem',
+                                        padding: '0.6rem 1rem',
+                                        backgroundColor: '#f1f3f5',
+                                        color: '#333',
+                                        borderRadius: '8px',
+                                        textDecoration: 'none',
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem',
+                                        border: '1px solid #dee2e6'
+                                    }}
+                                >
+                                    📞 다산콜센터(120)에 문의하기
+                                </a>
+                            </div>
+                        ),
+                        avatarUrl: '/images/eco_mascot_no.png'
+                    });
                 }
             } else {
-                addMessage({ id: Date.now(), type: 'bot', content: '정보를 불러오는데 실패했습니다.', avatarUrl: '/images/eco_mascot_no.png' });
+                addMessage({
+                    id: Date.now(),
+                    type: 'bot',
+                    content: (
+                        <div>
+                            <p>정보를 불러오는데 실패했습니다.</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    padding: '0.4rem 0.8rem',
+                                    backgroundColor: '#FF5252',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                🔄 다시 시도하기
+                            </button>
+                        </div>
+                    ),
+                    avatarUrl: '/images/eco_mascot_no.png'
+                });
             }
 
         } catch (error) {
@@ -236,15 +288,33 @@ export default function Chat() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Display user message with "Image Sent"
-        addMessage({ id: Date.now(), type: 'user', content: "📷 사진을 분석중입니다..." });
-
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64 = reader.result as string;
-            // Remove prefix (data:image/jpeg;base64,)
-            const base64Data = base64.split(',')[1];
-            fetchRecycleInfo("image", base64Data);
+
+            // Display user message with image immediately
+            addMessage({
+                id: Date.now(),
+                type: 'user',
+                content: (
+                    <div>
+                        <img
+                            src={base64}
+                            alt="Uploaded Waste"
+                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                        />
+                        <span>📷 사진을 분석중입니다...</span>
+                    </div>
+                )
+            });
+
+            // Extract mimetype
+            const matches = base64.match(/^data:(.+);base64,(.+)$/);
+            if (matches) {
+                const mimeType = matches[1];
+                const base64Data = matches[2];
+                fetchRecycleInfo("image", base64Data, mimeType);
+            }
         };
         reader.readAsDataURL(file);
 
@@ -253,12 +323,53 @@ export default function Chat() {
     };
 
     // ... (useEffect for searchParams, handleSubmit, sendMessage logic same as before)
+    // Check for pending image from Home page
+    useEffect(() => {
+        const pendingImage = sessionStorage.getItem('pendingImage');
+        if (pendingImage) {
+            // Display immediately
+            addMessage({
+                id: Date.now(),
+                type: 'user',
+                content: (
+                    <div>
+                        <img
+                            src={pendingImage}
+                            alt="Uploaded Waste"
+                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                        />
+                        <span>📷 사진을 분석중입니다...</span>
+                    </div>
+                )
+            });
+
+            // Process
+            const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
+            if (matches) {
+                const mimeType = matches[1];
+                const base64Data = matches[2];
+                fetchRecycleInfo("image", base64Data, mimeType);
+            }
+
+            // Clear
+            sessionStorage.removeItem('pendingImage');
+        }
+    }, []);
+
     useEffect(() => {
         const query = searchParams.get('q');
+        const mode = searchParams.get('mode');
+
         if (query && query !== lastHandledQuery.current) {
             lastHandledQuery.current = query;
             addMessage({ id: Date.now(), type: 'user', content: query });
             fetchRecycleInfo(query);
+        } else if (mode === 'voice') {
+            // Auto-start voice if requested
+            // Small timeout to allow render
+            setTimeout(() => {
+                handleVoiceInput();
+            }, 500);
         }
     }, [searchParams]);
 
@@ -309,6 +420,17 @@ export default function Chat() {
                         </div>
                         <h2 className={styles.welcomeText}>무엇이든 물어봐주세요!</h2>
 
+                        <div className={styles.suggestions}>
+                            {['깨진 그릇은 어떻게 버려요?', '오늘 배출 가능한 품목은?', '폐가전 무료 수거 방법', '아이스팩 처리 방법'].map((question, idx) => (
+                                <button
+                                    key={idx}
+                                    className={styles.chip}
+                                    onClick={() => sendMessage(question)}
+                                >
+                                    {question}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     messages.map((msg) => (
@@ -317,12 +439,30 @@ export default function Chat() {
                                 {msg.type === 'bot' && (
                                     <div className={styles.botHeader}>
                                         [에코 봇]
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#666', marginLeft: '8px' }}>
-                                            {msg.source || '출처: 행정안전부_생활쓰레기배출정보'}
-                                        </span>
                                     </div>
                                 )}
                                 <div>{msg.content}</div>
+
+                                {msg.type === 'bot' && (
+                                    <div className={styles.botFooter}>
+                                        <div className={styles.source}>
+                                            📚 {msg.source || '출처: 환경부 재활용품 분리배출 가이드라인 (2025)'}
+                                        </div>
+                                        <div className={styles.feedbackContainer}>
+                                            <button className={styles.feedbackBtn}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                                                도움됨
+                                            </button>
+                                            <button className={styles.feedbackBtn}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+                                                아쉬움
+                                            </button>
+                                        </div>
+                                        <div className={styles.disclaimer}>
+                                            * 정확한 정보는 관할 구청 청소행정과 위생과(☎ 120)로 확인 부탁드립니다.
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))

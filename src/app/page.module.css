@@ -52,8 +52,8 @@
 
 .inputMinimal {
   width: 100%;
-  padding: 1.2rem 3.5rem 1.2rem 1.5rem;
-  /* Space for icon */
+  padding: 1.2rem 5.5rem 1.2rem 3.5rem;
+  /* Space for both icons */
   border-radius: 30px;
   border: 2px solid #E0E0E0;
   font-size: 1.15rem;
@@ -68,6 +68,43 @@
   box-shadow: 0 4px 20px rgba(39, 174, 96, 0.15);
 }
 
+.iconBtnLeft {
+  position: absolute;
+  left: 10px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: transform 0.2s;
+}
+
+.iconBtnLeft:hover,
+.iconBtnRight:hover {
+  transform: scale(1.1);
+  color: var(--primary-green);
+}
+
+.iconBtnRight {
+  position: absolute;
+  right: 50px;
+  /* Left of search button */
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: transform 0.2s;
+}
+
 .searchBtnMinimal {
   position: absolute;
   right: 10px;
@@ -76,35 +113,78 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
+  color: var(--primary-green);
 }
 
-.photoBtnMinimal {
-  margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #DDD;
-  padding: 0.8rem 1.5rem;
-  border-radius: 24px;
-  font-size: 1rem;
+/* Hidden elements */
+.photoBtnMinimal,
+.helperTextMinimal {
+  display: none;
+}
+
+/* 1.5 Recommend Chips */
+.recommendSection {
+  width: 100%;
+  margin-top: -1rem;
+  /* Adjust spacing */
+  padding: 0 0.5rem;
+}
+
+.recommendTitle {
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.6rem;
   font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  padding: 0.4rem 0.8rem;
+  background-color: #F8F9FA;
+  border: 1px solid #EEE;
+  border-radius: 20px;
+  font-size: 0.85rem;
   color: #555;
   cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s;
+  gap: 0.3rem;
 }
 
-.photoBtnMinimal:active {
-  transform: scale(0.98);
-  background-color: #F9F9F9;
+.chip:hover {
+  background-color: #F0F0F0;
+  border-color: #DDD;
 }
 
-.helperTextMinimal {
-  margin-top: 0.8rem;
+.chip.recent {
+  background-color: #E8F5E9;
+  /* Light green tint */
+  border-color: #C8E6C9;
+  color: #2E7D32;
+}
+
+.chipDelete {
+  background: none;
+  border: none;
+  color: #81C784;
   font-size: 0.9rem;
-  color: #999;
-  font-weight: 500;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.chipDelete:hover {
+  color: #D32F2F;
 }
 
 /* 2. Today Context */
@@ -214,4 +294,85 @@
   color: #CCC;
   font-size: 1.5rem;
   font-weight: 300;
+}
+
+/* Location Prompt Dot */
+.locationPrompt {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ff5252;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  /* Above nav bar */
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: #333;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-out;
+  width: 90%;
+  max-width: 360px;
+  cursor: pointer;
+}
+
+.toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toastContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.toastIcon {
+  font-size: 1.2rem;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: #AAA;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
 }

@@ -103,8 +103,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.4rem;
-    /* More padding */
+    padding: 1rem;
     background-color: white;
     border-radius: 18px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -136,8 +135,7 @@
 
 .locationName {
     font-weight: 800;
-    font-size: 1.1rem;
-    /* Larger */
+    font-size: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -170,8 +168,7 @@
 /* Empty State */
 .emptyStateCard {
     background-color: white;
-    padding: 3rem 1.5rem;
-    /* Spacious */
+    padding: 2rem 1.5rem;
     border-radius: 20px;
     text-align: center;
     border: 2px dashed #CCC;
@@ -215,6 +212,20 @@
     margin-top: 0.8rem;
 }
 
+.addBtnOutline {
+    padding: 1rem 2rem;
+    border-radius: 14px;
+    font-weight: 700;
+    border: 2px solid #ddd;
+    background: white;
+    color: #666;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 /* Updated Contact List */
 .contactList {
     display: flex;
@@ -226,8 +237,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.4rem;
-    /* More padding */
+    padding: 1rem;
     background-color: white;
     border-radius: 18px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -285,6 +295,107 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+}
+
+/* Notification Section */
+.notificationList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notificationItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    border: 1px solid #E0E0E0;
+}
+
+.notiInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    margin-right: 1rem;
+}
+
+.notiLabel {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notiDesc {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+    background: #F8F9FA;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    align-self: flex-start;
+}
+
+/* Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: var(--primary-green);
+}
+
+input:focus+.slider {
+    box-shadow: 0 0 1px var(--primary-green);
+}
+
+input:checked+.slider:before {
+    -webkit-transform: translateX(22px);
+    -ms-transform: translateX(22px);
+    transform: translateX(22px);
 }
 
 /* Modal for Naming */

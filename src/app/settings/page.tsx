@@ -6,7 +6,7 @@ import { useLocation } from '@/context/LocationContext';
 import AddressSearch from '@/components/AddressSearch';
 
 export default function Settings() {
-    const { location, favorites, addFavorite, removeFavorite, promoteFavorite } = useLocation();
+    const { location, favorites, addFavorite, removeFavorite, promoteFavorite, detectLocation } = useLocation();
     const [showAddressSearch, setShowAddressSearch] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
@@ -14,15 +14,43 @@ export default function Settings() {
 
     const [contactInfo, setContactInfo] = useState<{ name: string, phone: string } | null>(null);
 
-    // Fetch Contact Info based on Current Location (Active Address)
+    const [notificationSettings, setNotificationSettings] = useState({
+        general: false,
+        recycle: false,
+        food: false
+    });
+
+    const [wasteScheduler, setWasteScheduler] = useState({
+        general: '정보 확인 중...',
+        recycle: '정보 확인 중...',
+        food: '정보 확인 중...'
+    });
+
+    // Load Notification Settings
     useEffect(() => {
-        const fetchContactInfo = async () => {
+        const saved = localStorage.getItem('notificationSettings');
+        if (saved) {
+            setNotificationSettings(JSON.parse(saved));
+        }
+    }, []);
+
+    const handleToggleNotification = (key: 'general' | 'recycle' | 'food') => {
+        const newSettings = { ...notificationSettings, [key]: !notificationSettings[key] };
+        setNotificationSettings(newSettings);
+        localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+    };
+
+    // Fetch Contact Info & Rules based on Current Location (Active Address)
+    useEffect(() => {
+        const fetchInfo = async () => {
+            // Default State
+            const defaultContact = { name: '다산콜센터 (생활민원)', phone: '120' };
+            const defaultScheduler = { general: '정보 없음', recycle: '정보 없음', food: '정보 없음' };
+
             // If location is not set or invalid
             if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
-                setContactInfo({
-                    name: '다산콜센터 (생활민원)',
-                    phone: '120'
-                });
+                setContactInfo(defaultContact);
+                setWasteScheduler(defaultScheduler);
                 return;
             }
 
@@ -33,10 +61,8 @@ export default function Settings() {
             const dong = parts[2];
 
             if (!sido || !sigungu) {
-                setContactInfo({
-                    name: '다산콜센터 (생활민원)',
-                    phone: '120'
-                });
+                setContactInfo(defaultContact);
+                setWasteScheduler(defaultScheduler);
                 return;
             }
 
@@ -46,33 +72,43 @@ export default function Settings() {
 
                 if (data.rules && data.rules.length > 0) {
                     const rule = data.rules[0];
+
+                    // 1. Set Contact Info
                     if (rule.contact) {
-                        setContactInfo({
-                            name: `${sigungu} 청소행정과`,
-                            phone: rule.contact
-                        });
+                        setContactInfo({ name: `${sigungu} 청소행정과`, phone: rule.contact });
                     } else {
-                        setContactInfo({
-                            name: '다산콜센터 (생활민원)',
-                            phone: '120'
-                        });
+                        setContactInfo(defaultContact);
                     }
-                } else {
-                    setContactInfo({
-                        name: '다산콜센터 (생활민원)',
-                        phone: '120'
+
+                    // 2. Set Scheduler Info
+                    // Helper to format: "매일 19:00" or "화,목 전날 20:00"
+                    const formatSchedule = (days: string, time: string) => {
+                        if (!days) return '정보 없음';
+                        const cleanTime = time ? time.split('~')[0].trim() : '19:00'; // Take start time
+                        // Assuming time format is like "18:00~24:00" -> "18:00"
+
+                        if (days.includes('매일')) return `매일 ${cleanTime} 알림`;
+                        return `${days} 전날 ${cleanTime} 알림`;
+                    };
+
+                    setWasteScheduler({
+                        general: formatSchedule(rule.gnrlWsteDschrgDay, rule.gnrlWsteDschrgTime),
+                        recycle: formatSchedule(rule.recycleDschrgDay, rule.recycleDschrgTime),
+                        food: formatSchedule(rule.foodWsteDschrgDay, rule.foodWsteDschrgTime)
                     });
+
+                } else {
+                    setContactInfo(defaultContact);
+                    setWasteScheduler(defaultScheduler);
                 }
             } catch (e) {
-                console.error("Failed to fetch contact info", e);
-                setContactInfo({
-                    name: '다산콜센터 (생활민원)',
-                    phone: '120'
-                });
+                console.error("Failed to fetch info", e);
+                setContactInfo(defaultContact);
+                setWasteScheduler(defaultScheduler);
             }
         };
 
-        fetchContactInfo();
+        fetchInfo();
     }, [location]);
 
     const handleAddressPicked = (addr: string) => {
@@ -80,6 +116,15 @@ export default function Settings() {
         setShowAddressSearch(false);
         setNewName(''); // Reset name
         setShowNameModal(true);
+    };
+
+    const handleDetectLocation = async () => {
+        const addr = await detectLocation(); // Returns Promise<string>
+        if (addr && !addr.includes('실패') && !addr.includes('미지원')) {
+            handleAddressPicked(addr); // Proceed to name modal with detected address
+        } else {
+            alert(addr); // Show error message
+        }
     };
 
     const handleSaveLocation = () => {
@@ -109,7 +154,13 @@ export default function Settings() {
         }, 100);
     };
 
-    const primaryLocation = favorites.length > 0 ? favorites[0] : null;
+    // Toggle Switch Component
+    const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
+        <div className={styles.switch} onClick={onClick}>
+            <input type="checkbox" checked={active} readOnly />
+            <span className={styles.slider}></span>
+        </div>
+    );
 
     return (
         <div className={styles.container}>
@@ -168,6 +219,39 @@ export default function Settings() {
                 </div>
             </section>
 
+            {/* Notification Section */}
+            <section className={styles.section}>
+                <div className={styles.header}>맞춤 알림 설정</div>
+                <div className={styles.notificationList}>
+                    {/* General Waste */}
+                    <div className={styles.notificationItem}>
+                        <div className={styles.notiInfo}>
+                            <div className={styles.notiLabel}>🗑️ 일반쓰레기</div>
+                            <div className={styles.notiDesc}>{wasteScheduler.general}</div>
+                        </div>
+                        <Toggle active={notificationSettings.general} onClick={() => handleToggleNotification('general')} />
+                    </div>
+
+                    {/* Recycle */}
+                    <div className={styles.notificationItem}>
+                        <div className={styles.notiInfo}>
+                            <div className={styles.notiLabel}>♻️ 재활용</div>
+                            <div className={styles.notiDesc}>{wasteScheduler.recycle}</div>
+                        </div>
+                        <Toggle active={notificationSettings.recycle} onClick={() => handleToggleNotification('recycle')} />
+                    </div>
+
+                    {/* Food Waste */}
+                    <div className={styles.notificationItem}>
+                        <div className={styles.notiInfo}>
+                            <div className={styles.notiLabel}>🍕 음식물</div>
+                            <div className={styles.notiDesc}>{wasteScheduler.food}</div>
+                        </div>
+                        <Toggle active={notificationSettings.food} onClick={() => handleToggleNotification('food')} />
+                    </div>
+                </div>
+            </section>
+
 
             {/* Department Contact Section - Dynamic based on Location */}
             <section className={styles.section}>
@@ -194,13 +278,12 @@ export default function Settings() {
                 </div>
             </section>
 
-            {/* System Info REMOVED */}
-
             {/* Modals */}
             {showAddressSearch && (
                 <AddressSearch
                     onComplete={handleAddressPicked}
                     onClose={() => setShowAddressSearch(false)}
+                    onDetectLocation={handleDetectLocation}
                 />
             )}
 

@@ -150,7 +150,9 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    mix-blend-mode: multiply;
+    /* mix-blend-mode assumes white background in image, strictly center it */
+    display: block;
+    margin: 0 auto;
 }
 
 
@@ -162,4 +164,6 @@
     color: #333;
     opacity: 0;
     animation: textAppear 0.5s ease-out 2.1s forwards;
+    text-align: center;
+    width: 100%;
 }

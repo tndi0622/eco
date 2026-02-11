@@ -6,9 +6,10 @@ import styles from './AddressSearch.module.css';
 interface AddressSearchProps {
     onComplete: (address: string) => void;
     onClose: () => void;
+    onDetectLocation?: () => void;
 }
 
-export default function AddressSearch({ onComplete, onClose }: AddressSearchProps) {
+export default function AddressSearch({ onComplete, onClose, onDetectLocation }: AddressSearchProps) {
     const handleComplete = (data: any) => {
         let fullAddress = data.address;
         let extraAddress = '';
@@ -34,7 +35,26 @@ export default function AddressSearch({ onComplete, onClose }: AddressSearchProp
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.header}>
-                    <span className={styles.title}>주소 검색</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className={styles.title}>주소 검색</span>
+                        {onDetectLocation && (
+                            <button
+                                onClick={onDetectLocation}
+                                style={{
+                                    border: '1px solid #27AE60',
+                                    borderRadius: '12px',
+                                    background: 'white',
+                                    color: '#27AE60',
+                                    padding: '4px 8px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    fontWeight: '600'
+                                }}
+                            >
+                                📍 현재 위치로 찾기
+                            </button>
+                        )}
+                    </div>
                     <button className={styles.closeBtn} onClick={onClose}>&times;</button>
                 </div>
 

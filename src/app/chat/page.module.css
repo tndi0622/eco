@@ -37,6 +37,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    mix-blend-mode: multiply;
 }
 
 .welcomeText {
@@ -130,6 +131,7 @@
     height: 24px;
     border-radius: 50%;
     object-fit: cover;
+    mix-blend-mode: multiply;
 }
 
 .source {
@@ -312,7 +314,52 @@
     transition: background-color 0.2s;
 }
 
-.attachBtn:hover .attachIconCircle {
-    background-color: #E8F5E9;
-    /* Light green */
+/* Bot Message Enhancement */
+.botFooter {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px dashed #EEE;
+}
+
+.source {
+    font-size: 0.75rem;
+    color: #999;
+    font-style: italic;
+}
+
+.feedbackContainer {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 0.2rem;
+}
+
+.feedbackBtn {
+    background: none;
+    border: 1px solid #EEE;
+    border-radius: 12px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.feedbackBtn:hover {
+    background-color: #F5F5F5;
+    color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.disclaimer {
+    font-size: 0.7rem;
+    color: #AAA;
+    margin-top: 0.5rem;
+    line-height: 1.3;
 }
