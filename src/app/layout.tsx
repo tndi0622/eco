@@ -10,8 +10,8 @@ import { LocationProvider } from '@/context/LocationContext';
 import NotificationManager from '@/components/NotificationManager';
 
 const notoSansKr = Noto_Sans_KR({
-  preload: false,
-  weight: ['100', '300', '400', '500', '700', '900'],
+  weight: ['300', '400', '500', '700'], // Optimized weights
+  subsets: ['latin'],
   variable: '--font-noto-sans-kr',
   display: 'swap',
 });
