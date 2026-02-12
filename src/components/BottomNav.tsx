@@ -47,6 +47,7 @@ export default function BottomNav() {
                 <Link
                     key={item.path}
                     href={item.path}
+                    prefetch={false} // Prevent preloading unused page resources
                     className={`${styles.item} ${pathname === item.path ? styles.active : ''}`}
                 >
                     {item.icon}
