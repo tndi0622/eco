@@ -1,12 +1,14 @@
 'use client';
 
+
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
-import SplashScreen from '@/components/SplashScreen';
 import { useLocation } from '@/context/LocationContext';
-import EcoDashboard from '@/components/EcoDashboard';
-import Onboarding from '@/components/Onboarding';
+
+const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false });
+const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false });
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState<boolean | null>(null);
@@ -233,15 +235,25 @@ export default function Home() {
     sessionStorage.setItem('hasSeenSplash', 'true');
   };
 
-  // If status is null (initializing), render nothing or loading to prevent flash
-  if (showSplash === null) return null;
+  // If status is null (initializing), render a hidden div to use the styles prevents preload warning
+  if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
 
   if (showSplash) {
-    return <SplashScreen onFinish={handleSplashFinish} />;
+    return (
+      <>
+        <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />
+        <SplashScreen onFinish={handleSplashFinish} />
+      </>
+    );
   }
 
   if (showOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    return (
+      <>
+        <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />
+        <Onboarding onComplete={handleOnboardingComplete} />
+      </>
+    );
   }
 
 
@@ -265,6 +277,11 @@ export default function Home() {
       <div className={styles.contentWrapper}>
         {/* 1. Hero Entry Section */}
         <section className={styles.heroEntry}>
+          <img
+            src="/images/eco_mascot_question.png"
+            alt="Questioning Eco Mascot"
+            className={styles.heroMascot}
+          />
           <h1 className={styles.heroTitleMinimal}>
             버리기 헷갈릴 때,<br />
             <span className={styles.highlight}>바로 알려드려요</span>

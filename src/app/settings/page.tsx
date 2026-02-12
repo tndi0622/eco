@@ -11,7 +11,21 @@ export default function Settings() {
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
     const [newName, setNewName] = useState('');
+
     const [editTarget, setEditTarget] = useState<{ name: string, address: string } | null>(null);
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+    // Close menu when clicking outside
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            // Check if click is inside a menu container using data attribute
+            if ((e.target as Element).closest('[data-menu-container]')) return;
+            setOpenMenu(null);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const [contactInfo, setContactInfo] = useState<{ name: string, phone: string } | null>(null);
 
@@ -133,6 +147,7 @@ export default function Settings() {
 
     const handleEditClick = (fav: any, e: React.MouseEvent) => {
         e.stopPropagation();
+        setOpenMenu(null); // Close menu
         setEditTarget(fav);
         setNewName(fav.name);
         setPendingAddress(fav.address);
@@ -221,23 +236,41 @@ export default function Settings() {
                                         </span>
                                         <span className={styles.locationAddr}>{fav.address}</span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <div className={styles.menuContainer} data-menu-container>
                                         <button
-                                            className={styles.deleteBtn}
-                                            style={{ backgroundColor: '#f1f3f5', color: '#333', border: '1px solid #ddd' }}
-                                            onClick={(e) => handleEditClick(fav, e)}
-                                        >
-                                            수정
-                                        </button>
-                                        <button
-                                            className={styles.deleteBtn}
+                                            className={`${styles.menuBtn} ${openMenu === fav.name ? styles.active : ''}`}
                                             onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteLocation(fav.name);
+                                                e.stopPropagation(); // Stop click from reaching parent card
+                                                // Toggle menu
+                                                setOpenMenu(prev => prev === fav.name ? null : fav.name);
                                             }}
+                                            title="설정"
                                         >
-                                            삭제
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                            </svg>
                                         </button>
+                                        {openMenu === fav.name && (
+                                            <div className={styles.menuDropdown}>
+                                                <button
+                                                    className={styles.menuItem}
+                                                    onClick={(e) => handleEditClick(fav, e)}
+                                                >
+                                                    수정
+                                                </button>
+                                                <button
+                                                    className={`${styles.menuItem} ${styles.delete}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenMenu(null);
+                                                        handleDeleteLocation(fav.name);
+                                                    }}
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -256,7 +289,7 @@ export default function Settings() {
                     {/* General Waste */}
                     <div className={styles.notificationItem}>
                         <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}>🗑️ 일반쓰레기</div>
+                            <div className={styles.notiLabel}> 일반쓰레기</div>
                             <div className={styles.notiDesc}>{wasteScheduler.general}</div>
                         </div>
                         <Toggle active={notificationSettings.general} onClick={() => handleToggleNotification('general')} />
@@ -265,7 +298,7 @@ export default function Settings() {
                     {/* Recycle */}
                     <div className={styles.notificationItem}>
                         <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}>♻️ 재활용</div>
+                            <div className={styles.notiLabel}> 재활용</div>
                             <div className={styles.notiDesc}>{wasteScheduler.recycle}</div>
                         </div>
                         <Toggle active={notificationSettings.recycle} onClick={() => handleToggleNotification('recycle')} />
@@ -274,7 +307,7 @@ export default function Settings() {
                     {/* Food Waste */}
                     <div className={styles.notificationItem}>
                         <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}>🍕 음식물</div>
+                            <div className={styles.notiLabel}> 음식물</div>
                             <div className={styles.notiDesc}>{wasteScheduler.food}</div>
                         </div>
                         <Toggle active={notificationSettings.food} onClick={() => handleToggleNotification('food')} />

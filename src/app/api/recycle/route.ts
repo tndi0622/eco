@@ -139,18 +139,17 @@ export async function GET(request: Request) {
                 });
             }
 
-            // 3. Sort by Dong Priority
+            // 3. Sort by Dong Priority (Enhanced)
             if (dong && items.length > 1) {
                 items.sort((a, b) => {
-                    const aHasDong = a.emdNm && a.emdNm.includes(dong);
-                    const bHasDong = b.emdNm && b.emdNm.includes(dong);
-                    if (aHasDong && !bHasDong) return -1;
-                    if (!aHasDong && bHasDong) return 1;
-                    // Generic (empty emdNm) next
-                    const aIsGeneric = !a.emdNm;
-                    const bIsGeneric = !b.emdNm;
-                    if (aIsGeneric && !bIsGeneric) return -1;
-                    if (!aIsGeneric && bIsGeneric) return 1;
+                    const aName = a.emdNm || '';
+                    const bName = b.emdNm || '';
+                    // Check strict or partial match (Bidirectional)
+                    const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
+                    const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
+
+                    if (aMatch && !bMatch) return -1;
+                    if (!aMatch && bMatch) return 1;
                     return 0;
                 });
             }
@@ -167,6 +166,17 @@ export async function GET(request: Request) {
             const genAI = new GoogleGenerativeAI(geminiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
+            // Calculate Today's Info (KST)
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const kstGap = 9 * 60 * 60 * 1000;
+            const todayKST = new Date(utc + kstGap);
+
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayName = days[todayKST.getDay()];
+            const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
+            const timeStr = `${todayKST.getHours()}시 ${todayKST.getMinutes()}분`;
+
             const methodContext = publicDataItems.map(item =>
                 `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`
             ).join('\n');
@@ -176,28 +186,33 @@ export async function GET(request: Request) {
             ).join('\n');
 
             const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
-                `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime})`
+                `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`
             ).join('\n');
 
             const prompt = `
                 당신은 재활용 및 분리배출을 돕는 친절한 환경 마스코트 '에코'입니다.
-                사용자의 질문: "${query}"
-                사용자의 현재 위치: ${location || '알 수 없음'} (${sido} ${sigungu})
+                
+                [현재 상황]
+                - 사용자의 질문: "${query}"
+                - 사용자의 현재 위치: ${location || '알 수 없음'} (${sido} ${sigungu})
+                - **현재 시각: ${dateStr} ${timeStr}** (이 시간을 기준으로 "오늘", "내일", "지금" 배출 가능 여부를 판단하세요)
 
-                [1. 공공데이터: 분리배출 방법]
+                [1. 공공데이터: 분리배출 방법 (핵심 - 배출 방법)]
                 ${methodContext || "관련 데이터 없음"}
 
-                [2. 공공데이터: 수거/회수처]
-                ${placeContext || "주변 수거처 데이터 없음"}
+                [2. 공공데이터: 수거/회수처 (참고용 - 장소)]
+                ${placeContext || "관련 데이터 없음"}
 
-                [3. 로컬데이터: 동네 배출 규칙]
-                ${ruleContext || "해당 지역 로컬 규칙 없음"}
+                [3. 로컬데이터: 우리 동네 배출 규칙 (핵심 - 시간/요일)]
+                ${ruleContext || "지역 배출 규칙 데이터 없음"}
 
                 [지시사항]
-                1. 위 데이터를 종합하여 답변해주세요.
-                2. 공공데이터에 정보가 없다면, **당신이 알고 있는 일반적인 상식**을 기반으로 답변해주세요.
-                3. 답변은 친절하고 줄글 형태로 작성해주세요. (이모지 활용)
-                4. 모른다고 하지 말고, 일반적인 방법이라도 안내해주세요.
+                1. **배출 방법(HOW)**을 물으면 [1. 공공데이터]를 최우선으로 참고하세요.
+                2. **배출 시간/요일(WHEN)**이나 **오늘 버려도 되는지**를 물으면 [3. 로컬데이터]와 [현재 시각]을 비교하여 정확히 답변하세요.
+                   - 예: 사용자가 "오늘 배출 가능?" 질문 시, 현재 요일(${dayName})이 배출 요일에 포함되는지 확인.
+                3. 공공데이터 정보가 부족하거나 "전용수거함"같이 단편적이면, **그것이 무엇인지 일반 상식을 동원해 구체적으로 설명**해주세요.
+                4. **중요: "데이터가 없다"는 말보다, 가지고 있는 정보(일반 상식 포함)로 최대한 해결책을 제시하세요.**
+                5. 답변은 친절한 줄글 형태로 작성하며, 이모지를 적절히 사용하여 가독성을 높여주세요.
             `;
 
             const result = await model.generateContent(prompt);

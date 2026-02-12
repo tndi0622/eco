@@ -39,6 +39,31 @@
   margin-bottom: 0.5rem;
 }
 
+.heroMascot {
+  width: 140px;
+  height: auto;
+  margin-bottom: -1rem;
+  /* Slight overlap or tight spacing */
+  animation: floating 3s ease-in-out infinite;
+  /* enhance white background removal */
+  filter: brightness(1.05) contrast(1.03);
+  mix-blend-mode: multiply;
+}
+
+@keyframes floating {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
 .highlight {
   color: var(--primary-green);
 }

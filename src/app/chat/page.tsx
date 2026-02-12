@@ -8,6 +8,36 @@ import styles from './page.module.css';
 import { useChat } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
 import ChatSkeleton from './ChatSkeleton';
+import FormattedText from '@/components/FormattedText';
+
+function FeedbackButtons() {
+    const [activeType, setActiveType] = useState<'positive' | 'negative' | null>(null);
+
+    const handleClick = (type: 'positive' | 'negative') => {
+        if (activeType) return;
+        setActiveType(type);
+        setTimeout(() => setActiveType(null), 1000);
+    };
+
+    return (
+        <div className={styles.feedbackContainer}>
+            <button
+                className={`${styles.feedbackBtn} ${activeType === 'positive' ? styles.activeFeedback : ''}`}
+                onClick={() => handleClick('positive')}
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                도움됨
+            </button>
+            <button
+                className={`${styles.feedbackBtn} ${activeType === 'negative' ? styles.activeFeedback : ''}`}
+                onClick={() => handleClick('negative')}
+            >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+                아쉬움
+            </button>
+        </div>
+    );
+}
 
 function ChatContent() {
     const searchParams = useSearchParams();
@@ -126,7 +156,7 @@ function ChatContent() {
             if (data.resultType === 'gemini') {
                 content = (
                     <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
-                        {data.message}
+                        <FormattedText text={data.message} />
                     </div>
                 );
                 // ... (Bot message creation similar to before)
@@ -401,13 +431,7 @@ function ChatContent() {
         fetchRecycleInfo(text);
     };
 
-    const handleFeedback = (type: 'positive' | 'negative') => {
-        if (type === 'positive') {
-            alert("도움이 되었다니 다행이에요! 😊\n더 궁금한 점이 있으시면 언제든 물어봐주세요.");
-        } else {
-            alert("부족한 점을 보완하여 더 똑똑한 에코도우미가 될게요! 😢\n정확한 정보는 관할 구청에 다시 한 번 확인 부탁드려요.");
-        }
-    };
+
 
     return (
         <div className={styles.container}>
@@ -457,16 +481,7 @@ function ChatContent() {
                                         <div className={styles.source}>
                                             📚 {msg.source || '출처: 환경부 재활용품 분리배출 가이드라인 (2025)'}
                                         </div>
-                                        <div className={styles.feedbackContainer}>
-                                            <button className={styles.feedbackBtn} onClick={() => handleFeedback('positive')}>
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
-                                                도움됨
-                                            </button>
-                                            <button className={styles.feedbackBtn} onClick={() => handleFeedback('negative')}>
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zM17 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
-                                                아쉬움
-                                            </button>
-                                        </div>
+                                        <FeedbackButtons />
                                         <div className={styles.disclaimer}>
                                             * 정확한 정보는 관할 구청 청소행정과 위생과(☎ 120)로 확인 부탁드립니다.
                                         </div>

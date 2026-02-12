@@ -6,6 +6,9 @@ import BottomNav from '@/components/BottomNav';
 import { ChatProvider } from '@/context/ChatContext';
 import { LocationProvider } from '@/context/LocationContext';
 
+
+import NotificationManager from '@/components/NotificationManager';
+
 const notoSansKr = Noto_Sans_KR({
   preload: false,
   weight: ['100', '300', '400', '500', '700', '900'],
@@ -28,6 +31,7 @@ export default function RootLayout({
       <body className={notoSansKr.className}>
         <LocationProvider>
           <ChatProvider>
+            <NotificationManager />
             <Header />
             <main>{children}</main>
             <BottomNav />

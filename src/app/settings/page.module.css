@@ -471,3 +471,92 @@ input:checked+.slider:before {
     cursor: pointer;
     font-weight: 700;
 }
+
+/* Menu Button (Gear Icon) */
+.menuBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.menuBtn:hover,
+.menuBtn.active {
+    background-color: #F0F0F0;
+    color: #555;
+    transform: rotate(30deg);
+}
+
+/* Dropdown Menu */
+.menuContainer {
+    position: relative;
+    /* Determine positioning context */
+    z-index: 999;
+}
+
+.menuDropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+    z-index: 1000;
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menuItem {
+    width: 100%;
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border: none;
+    background: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.menuItem:last-child {
+    border-bottom: none;
+}
+
+.menuItem:hover {
+    background-color: #F8F9FA;
+}
+
+.menuItem.delete {
+    color: #FF5252;
+}
+
+.menuItem.delete:hover {
+    background-color: #FFF5F5;
+}
