@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import wasteRules from '@/data/waste_rules.json';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
     const { image, location, mimeType } = await request.json();
@@ -8,7 +10,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Image is required' }, { status: 400 });
     }
 
+    const apiKey = process.env.DATA_GO_KR_API_KEY;
     const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    // Public Data Service Key
+    const serviceApiKey = 'c7c9950c1f91a266a3e39644a7febeac35730f42a49c79b07e676d84e4d1bbe1';
 
     if (!geminiKey) {
         return NextResponse.json({ error: 'Gemini Key missing' }, { status: 500 });
@@ -16,23 +21,14 @@ export async function POST(request: Request) {
 
     try {
         const genAI = new GoogleGenerativeAI(geminiKey);
-        // Use gemini-2.5-flash-lite as requested by user
+        // Use gemini-2.5-flash-lite as requested
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-        const prompt = `
-            당신은 친절한 환경 마스코트 '에코'입니다.
-            사용자가 방금 업로드한 쓰레기 사진을 보고, 올바른 분리배출 방법을 알려줘야 합니다.
-            
-            사용자 위치: ${location || "알 수 없음"}
-
-            [지시사항]
-            1. 사진 속 물건이 무엇인지 파악하고, 그 물건의 이름을 언급해주세요. (예: "이건 배달 떡볶이 용기네요!")
-            2. 해당 물건을 어떻게 버려야 하는지 구체적인 단계(세척, 분리 등)를 포함해 설명해주세요.
-            3. 재활용이 가능한지, 불가능한지(종량제 등) 명확히 알려주세요.
-            4. 말투는 친절하고 이모지를 사용해주세요.
-            5. 만약 사진이 쓰레기와 관련이 없다면, 정중하게 다시 질문해달라고 하세요.
-            
-            짧고 명확하게 답변해주세요.
+        // --- Step 1: Identify the Item ---
+        const identificationPrompt = `
+            Analyze this image and identify the main waste item.
+            Return ONLY the single specific name of the item in Korean (e.g., "소파", "침대", "건전지", "투명페트병").
+            Do not add any other text or punctuation.
         `;
 
         const imagePart = {
@@ -42,12 +38,229 @@ export async function POST(request: Request) {
             },
         };
 
-        const result = await model.generateContent([prompt, imagePart]);
-        const responseText = result.response.text();
+        const idResult = await model.generateContent([identificationPrompt, imagePart]);
+        const identifiedItem = idResult.response.text().trim();
+        const query = identifiedItem; // This becomes our search query
+
+        // --- Step 2: Fetch Public Data (Parallel) ---
+
+        // Helper: Parse Location
+        const parseLocation = (loc: string | null) => {
+            if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
+            const parts = loc.split(' ');
+            return {
+                sido: parts[0] || '',
+                sigungu: parts[1] || '',
+                dong: parts[2] || ''
+            };
+        };
+
+        const { sido, sigungu, dong } = parseLocation(location);
+
+        // Helper: Timeout Wrapper
+        const fetchWithTimeout = async (url: string, ms: number = 2500) => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), ms);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (!res.ok) throw new Error(`Status ${res.status}`);
+                return await res.json();
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
+            }
+        };
+
+        const isDataEmpty = (d: any) => {
+            if (!d?.response?.body?.items) return true;
+            const items = d.response.body.items;
+            if (Array.isArray(items) && items.length === 0) return true;
+            if (typeof items === 'string' && items === '') return true;
+            if (items?.item && Array.isArray(items.item) && items.item.length === 0) return true;
+            return false;
+        };
+
+        // API Fetchers
+        const fetchPublicData = async () => {
+            if (!apiKey) return [];
+            try {
+                let apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
+                let data = await fetchWithTimeout(apiUrl);
+                if (isDataEmpty(data)) return [];
+                const rawItems = data.response.body.items;
+                if (Array.isArray(rawItems)) return rawItems;
+                else if (Array.isArray(rawItems?.item)) return rawItems.item;
+                else if (rawItems?.item) return [rawItems.item];
+                return [];
+            } catch (e) { return []; }
+        };
+
+        const fetchLargeWasteData = async () => {
+            if (!serviceApiKey) return [];
+            try {
+                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_lar_was_fee_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
+                if (query) apiUrl += `&larWasNm=${encodeURIComponent(query)}`;
+                const data = await fetchWithTimeout(apiUrl);
+                if (!isDataEmpty(data)) {
+                    const rawItems = data.response.body.items;
+                    let items: any[] = [];
+                    if (Array.isArray(rawItems)) items = rawItems;
+                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
+                    else if (rawItems?.item) items = [rawItems.item];
+                    return items;
+                }
+                return [];
+            } catch (e) { return []; }
+        };
+
+        const fetchWasteBagData = async () => {
+            if (!serviceApiKey) return [];
+            try {
+                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
+                const data = await fetchWithTimeout(apiUrl);
+                if (!isDataEmpty(data)) {
+                    const rawItems = data.response.body.items;
+                    let items: any[] = [];
+                    if (Array.isArray(rawItems)) items = rawItems;
+                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
+                    else if (rawItems?.item) items = [rawItems.item];
+                    return items;
+                }
+                return [];
+            } catch (e) { return []; }
+        };
+
+        const fetchFoodWasteData = async () => {
+            if (!serviceApiKey) return [];
+            try {
+                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
+                const data = await fetchWithTimeout(apiUrl);
+                if (!isDataEmpty(data)) {
+                    const rawItems = data.response.body.items;
+                    let items: any[] = [];
+                    if (Array.isArray(rawItems)) items = rawItems;
+                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
+                    else if (rawItems?.item) items = [rawItems.item];
+                    return items;
+                }
+                return [];
+            } catch (e) { return []; }
+        };
+
+        const fetchCollectionData = async () => {
+            if (!serviceApiKey || !sido) return [];
+            try {
+                const collectionUrl = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${serviceApiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
+                const cData = await fetchWithTimeout(collectionUrl);
+                const rawCItems = cData.response?.body?.items;
+                if (rawCItems) {
+                    if (Array.isArray(rawCItems)) return rawCItems;
+                    else if (rawCItems.item) return Array.isArray(rawCItems.item) ? rawCItems.item : [rawCItems.item];
+                }
+                return [];
+            } catch (e) { return []; }
+        };
+
+        // Execute Fetches
+        const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
+            fetchPublicData(),
+            fetchCollectionData(),
+            fetchLargeWasteData(),
+            fetchWasteBagData(),
+            fetchFoodWasteData()
+        ]);
+
+        let publicDataItems: any[] = publicDataResult.status === 'fulfilled' ? publicDataResult.value : [];
+        let collectionPointItems: any[] = collectionDataResult.status === 'fulfilled' ? collectionDataResult.value : [];
+        let largeWasteItems: any[] = largeWasteResult.status === 'fulfilled' ? largeWasteResult.value : [];
+        let wasteBagItems: any[] = wasteBagResult.status === 'fulfilled' ? wasteBagResult.value : [];
+        let foodWasteItems: any[] = foodWasteResult.status === 'fulfilled' ? foodWasteResult.value : [];
+        let wasteInfoItems: any[] = [];
+
+        // Local Data (Supabase/JSON)
+        if (sido) {
+            try {
+                if (supabase) {
+                    const { data, error } = await supabase.from('waste_rules').select('*').ilike('sido', `%${sido}%`).ilike('sigungu', `%${sigungu}%`);
+                    if (!error && data) wasteInfoItems = data;
+                }
+                if (wasteInfoItems.length === 0) {
+                    wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido) && rule.sigungu.includes(sigungu));
+                }
+                // Sort by Dong
+                if (dong && wasteInfoItems.length > 1) {
+                    wasteInfoItems.sort((a, b) => {
+                        const aName = a.emdNm || '';
+                        const bName = b.emdNm || '';
+                        const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
+                        const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
+                        if (aMatch && !bMatch) return -1;
+                        if (!aMatch && bMatch) return 1;
+                        return 0;
+                    });
+                }
+            } catch (e) { }
+        }
+
+
+        // --- Step 3: Final Answer ---
+        // Context Building
+        const methodContext = publicDataItems.map(item => `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`).join('\n');
+        const largeWasteContext = largeWasteItems.map(item => `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`).join('\n');
+        const wasteBagContext = wasteBagItems.map(item => `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`).join('\n');
+        const foodWasteContext = foodWasteItems.map(item => `- [음식물납부필증] 지역: ${item.ctpvNm} ${item.sggNm}, 유형: ${item.foodTrashPayCertTypeNm}, 대상: ${item.useTrgtNm}, 용량: ${item.foodTrashCpcty}, 가격: ${item.price}원`).join('\n');
+        const placeContext = collectionPointItems.map(item => `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`).join('\n');
+        const ruleContext = wasteInfoItems.slice(0, 3).map(item => `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`).join('\n');
+
+        const finalPrompt = `
+            당신은 친절한 환경 마스코트 '에코'입니다.
+            사용자가 사진으로 업로드한 **"${query}"**에 대한 올바른 처리 방법을 안내해 주세요.
+            
+            [사용자 정보]
+            - 위치: ${location || "알 수 없음"} (${sido} ${sigungu})
+            - 물건: ${query}
+
+            [1. 공공데이터: 분리배출 방법]
+            ${methodContext || "관련 데이터 없음"}
+
+            [2. 공공데이터: 대형폐기물 수수료 (가구/가전일 경우 필수 참고)]
+            ${largeWasteContext || "관련 데이터 없음"}
+
+            [3. 공공데이터: 종량제/음식물 가격 참고]
+            ${wasteBagContext || ""}
+            ${foodWasteContext || ""}
+
+            [4. 로컬데이터: 우리 동네 배출 규칙]
+            ${ruleContext || "지역 배출 규칙 데이터 없음"}
+            
+            [5. 공공데이터: 수거처 정보]
+            ${placeContext || ""}
+
+            [지시사항]
+            1. 먼저 **"${query}"**이(가) 무엇인지 확인했다고 언급해주세요.
+            2. 위 [공공데이터]를 최대한 활용하여, 해당 물건의 정확한 배출 방법과 비용(수수료, 봉투가격 등)을 안내하세요.
+            3. 데이터가 없다면, 일반적인 올바른 배출 방법을 친절하게 설명해주세요.
+            4. **출처 표기(필수):** 답변의 맨 마지막 줄에 다음 출처를 꼭 명시해 주세요:
+               "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"
+            5. 이모지는 문장 끝에만 사용해주세요.
+            
+            짧고 명확하게 답변해주세요.
+        `;
+
+        const finalResult = await model.generateContent([finalPrompt, imagePart]);
+        const responseText = finalResult.response.text();
 
         return NextResponse.json({
             resultType: 'gemini',
-            message: responseText
+            message: responseText,
+            identifiedItem: query
         });
 
     } catch (e: any) {
