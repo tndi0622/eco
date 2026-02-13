@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react';
 import styles from './SplashScreen.module.css';
 
+import { Jua } from 'next/font/google';
+
+const jua = Jua({
+    weight: '400',
+    subsets: ['latin'],
+    display: 'swap',
+});
+
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     const [show, setShow] = useState(true);
 
@@ -39,7 +47,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                 </div>
             </div>
 
-            <h1 className={styles.greetingText}>어서와!</h1>
+            <h1 className={`${styles.greetingText} ${jua.className}`}>어서와!</h1>
         </div>
     );
 }
