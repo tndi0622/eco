@@ -246,7 +246,7 @@ export default function Settings() {
                             {favorites.map((fav, idx) => (
                                 <div
                                     key={idx}
-                                    className={`${styles.locationItem} ${idx === 0 ? styles.activeLocation : ''}`}
+                                    className={`${styles.locationItem} ${idx === 0 ? styles.activeLocation : ''} ${openMenu === fav.name ? styles.hasOpenMenu : ''}`}
                                     onClick={() => handleLocationSelect(fav)}
                                     style={{ cursor: 'pointer' }}
                                 >

@@ -110,6 +110,13 @@
     border: 2px solid transparent;
     /* Prepare for border */
     transition: all 0.2s;
+    position: relative;
+    /* z-index 적용을 위해 추가 */
+}
+
+.locationItem.hasOpenMenu {
+    z-index: 100;
+    /* 메뉴가 열린 항목을 위로 올림 */
 }
 
 .activeLocation {
@@ -506,23 +513,23 @@ input:checked+.slider:before {
 /* Dropdown Menu */
 .menuContainer {
     position: relative;
-    /* Determine positioning context */
-    z-index: 999;
+    z-index: 101;
 }
 
 .menuDropdown {
     position: absolute;
-    top: 100%;
+    top: 110%;
+    /* 버튼과 약간의 간격 유지 */
     right: 0;
-    margin-top: 0.5rem;
     background-color: white;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    min-width: 120px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    /* 그림자 더 깊게 */
+    min-width: 100px;
     z-index: 1000;
     overflow: hidden;
     border: 1px solid #f0f0f0;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.15s ease-out;
 }
 
 @keyframes fadeIn {
