@@ -9,12 +9,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
     }
 
-    const apiKey = process.env.KAKAO_REST_API_KEY;
-
-    if (!apiKey) {
-        console.error('KAKAO_REST_API_KEY is not defined in environment variables');
-        return NextResponse.json({ error: 'API 키 설정이 누락되었습니다' }, { status: 500 });
-    }
+    // 디버깅을 위해 잠시 하드코딩 (테스트 후 반드시 삭제)
+    const apiKey = '7db389d1b3535a35714bf9a5bc89589f';
 
     try {
         // 카카오 로컬 API (좌표 -> 주소 변환) 호출
@@ -28,8 +24,12 @@ export async function GET(request: NextRequest) {
         );
 
         if (!res.ok) {
-            console.error(`Kakao API Error: ${res.status}`);
-            return NextResponse.json({ error: '지도 서비스 응답 일시 제한' }, { status: res.status });
+            const errorBody = await res.json();
+            console.error('Kakao API Error details:', errorBody);
+            return NextResponse.json(
+                { error: `지도 서비스 응답 일시 제한 (${res.status})`, details: errorBody },
+                { status: res.status }
+            );
         }
 
         const data = await res.json();
