@@ -62,7 +62,7 @@ function ChatContent() {
     const [showTokenModal, setShowTokenModal] = useState(false);
     const [isAdLoading, setIsAdLoading] = useState(false);
 
-    const { tokens, isSubscribed, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
+    const { tokens, isSubscribed, isAdmin, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -324,73 +324,84 @@ function ChatContent() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (!isSubscribed && tokens < 2 && !isAdmin) {
+            setShowTokenModal(true);
+            return;
+        }
+
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64 = reader.result as string;
 
-            // Display user message with image immediately
-            addMessage({
-                id: Date.now(),
-                type: 'user',
-                content: (
-                    <div>
-                        <img
-                            src={base64}
-                            alt="Uploaded Waste"
-                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                        />
-                        <span>📷 사진을 분석중입니다...</span>
-                    </div>
-                )
-            });
+            if (useToken(2)) {
+                const matches = base64.match(/^data:(.+);base64,(.+)$/);
+                if (matches) {
+                    const mimeType = matches[1];
+                    const base64Data = matches[2];
 
-            // Extract mimetype
-            const matches = base64.match(/^data:(.+);base64,(.+)$/);
-            if (matches) {
-                const mimeType = matches[1];
-                const base64Data = matches[2];
-                fetchRecycleInfo("image", base64Data, mimeType);
+                    addMessage({
+                        id: Date.now(),
+                        type: 'user',
+                        content: (
+                            <div>
+                                <img
+                                    src={base64}
+                                    alt="Uploaded Waste"
+                                    style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                                />
+                                <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                            </div>
+                        )
+                    });
+
+                    fetchRecycleInfo("image", base64Data, mimeType);
+                }
+            } else {
+                setShowTokenModal(true);
             }
         };
         reader.readAsDataURL(file);
-
-        // Reset input
         e.target.value = '';
     };
 
-    // ... (useEffect for searchParams, handleSubmit, sendMessage logic same as before)
-    // Check for pending image from Home page
     useEffect(() => {
         const pendingImage = sessionStorage.getItem('pendingImage');
         if (pendingImage) {
-            // Display immediately
-            addMessage({
-                id: Date.now(),
-                type: 'user',
-                content: (
-                    <div>
-                        <img
-                            src={pendingImage}
-                            alt="Uploaded Waste"
-                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                        />
-                        <span>📷 사진을 분석중입니다...</span>
-                    </div>
-                )
-            });
-
-            // Process
-            const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
-            if (matches) {
-                const mimeType = matches[1];
-                const base64Data = matches[2];
-                fetchRecycleInfo("image", base64Data, mimeType);
+            if (!isSubscribed && tokens < 2 && !isAdmin) {
+                setShowTokenModal(true);
+                sessionStorage.removeItem('pendingImage');
+                return;
             }
 
-            // Clear
+            if (useToken(2)) {
+                const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
+                if (matches) {
+                    const mimeType = matches[1];
+                    const base64Data = matches[2];
+
+                    addMessage({
+                        id: Date.now(),
+                        type: 'user',
+                        content: (
+                            <div>
+                                <img
+                                    src={pendingImage}
+                                    alt="Uploaded Waste"
+                                    style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                                />
+                                <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                            </div>
+                        )
+                    });
+
+                    fetchRecycleInfo("image", base64Data, mimeType);
+                }
+            } else {
+                setShowTokenModal(true);
+            }
             sessionStorage.removeItem('pendingImage');
         }
-    }, []);
+    }, [tokens, isSubscribed, isAdmin]);
 
     useEffect(() => {
         const query = searchParams.get('q');
@@ -398,18 +409,15 @@ function ChatContent() {
 
         if (query && query !== lastHandledQuery.current) {
             lastHandledQuery.current = query;
-            addMessage({ id: Date.now(), type: 'user', content: query });
-            fetchRecycleInfo(query);
+            sendMessage(query);
         } else if (mode === 'voice') {
-            // Auto-start voice if requested
-            // Small timeout to allow render
             setTimeout(() => {
                 handleVoiceInput();
             }, 500);
         }
     }, [searchParams]);
 
-    const [chatPlaceholder, setChatPlaceholder] = useState('예: 매트리스, 형광등, 커피찌꺼기');
+    const [chatPlaceholder, setChatPlaceholder] = useState('텍스트 1토큰 / 사진 2토큰');
 
     useEffect(() => {
         const examples = [
@@ -431,12 +439,12 @@ function ChatContent() {
     };
 
     const sendMessage = (text: string) => {
-        if (!isSubscribed && tokens <= 0) {
+        if (!isSubscribed && tokens < 1 && !isAdmin) {
             setShowTokenModal(true);
             return;
         }
 
-        if (useToken()) {
+        if (useToken(1)) {
             addMessage({ id: Date.now(), type: 'user', content: text });
             setInput('');
             fetchRecycleInfo(text);
@@ -451,17 +459,14 @@ function ChatContent() {
         setIsAdLoading(false);
         if (success) {
             setShowTokenModal(false);
-            alert('광고 시청 완료! 토큰 1개가 충전되었습니다. 😊');
+            alert('광고 시청 완료! 토큰 1개가 충전되었습니다.');
         } else {
             alert('오늘의 광고 시청 횟수(3회)를 모두 사용했습니다.');
         }
     };
 
-
-
     return (
         <div className={styles.container}>
-            {/* Token Status */}
             <div className={styles.tokenStatus} onClick={() => setShowTokenModal(true)}>
                 <span className={styles.tokenIcon}>💎</span>
                 <span>{isSubscribed ? '무제한' : `${tokens}개`}</span>
@@ -470,20 +475,20 @@ function ChatContent() {
             <input
                 type="file"
                 accept="image/*"
-                capture="environment" // Mobile camera trigger
+                capture="environment"
                 ref={fileInputRef}
                 style={{ display: 'none' }}
                 onChange={handleImageUpload}
             />
 
             <div className={styles.messagesArea}>
-                {/* ... (Message Rendering same as before) ... */}
                 {messages.length === 0 ? (
                     <div className={styles.emptyState}>
                         <div className={styles.mascotContainer}>
                             <img src={welcomeMascot} alt="Welcome" className={styles.mascotImage} />
                         </div>
                         <h2 className={styles.welcomeText}>무엇이든 물어봐주세요!</h2>
+                        <p className={styles.costHint}>텍스트 질문은 1토큰, 사진 분석은 2토큰이 사용됩니다.</p>
 
                         <div className={styles.suggestions}>
                             {['깨진 그릇은 어떻게 버려요?', '오늘 배출 가능한 품목은?', '폐가전 무료 수거 방법', '아이스팩 처리 방법'].map((question, idx) => (
@@ -529,19 +534,24 @@ function ChatContent() {
             </div>
 
             <div className={styles.inputArea}>
-                {/* Attach Menu Popover */}
                 <div className={`${styles.attachMenu} ${showAttachMenu ? styles.show : ''}`}>
                     <button type="button" className={styles.attachBtn} onClick={handleCameraClick}>
                         <div className={styles.attachIconCircle}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                         </div>
-                        <span>사진</span>
+                        <div className={styles.attachLabelWrapper}>
+                            <span className={styles.attachLabel}>사진</span>
+                            <span className={styles.tokenCostTag}>2토큰</span>
+                        </div>
                     </button>
                     <button type="button" className={styles.attachBtn} onClick={handleVoiceInput}>
                         <div className={styles.attachIconCircle}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                         </div>
-                        <span>음성</span>
+                        <div className={styles.attachLabelWrapper}>
+                            <span className={styles.attachLabel}>음성</span>
+                            <span className={styles.tokenCostTag}>1토큰</span>
+                        </div>
                     </button>
                 </div>
 
@@ -558,7 +568,6 @@ function ChatContent() {
                 </form>
             </div>
 
-            {/* Token/Recharge Modal */}
             {showTokenModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.tokenModal}>
@@ -571,6 +580,10 @@ function ChatContent() {
                             <>
                                 <div className={styles.modalIcon}>💎</div>
                                 <div className={styles.modalTitle}>토큰이 부족해요!</div>
+                                <div className={styles.tokenCostInfo}>
+                                    <div className={styles.costRow}><span>텍스트 질문</span> <span>1토큰</span></div>
+                                    <div className={styles.costRow}><span>사진 분석</span> <span>2토큰</span></div>
+                                </div>
                                 <p className={styles.modalDesc}>
                                     계속 질문하려면 광고를 보거나<br />
                                     토큰을 충전해 주세요.
@@ -601,7 +614,7 @@ function ChatContent() {
                                         if (confirm('월 2,900원에 프리미엄 멤버십을 시작하시겠습니까?')) {
                                             subscribe();
                                             setShowTokenModal(false);
-                                            alert('프리미엄 회원이 되신 것을 환영합니다! ✨');
+                                            alert('프리미엄 회원이 되신 것을 환영합니다!');
                                         }
                                     }}>
                                         <div className={styles.rechargeLabel}>

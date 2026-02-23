@@ -800,6 +800,31 @@ input:checked+.slider:before {
     color: #222;
 }
 
+.tokenCostTable {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    border: 1px solid #E5E7EB;
+    margin-bottom: 2rem;
+}
+
+.costItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.costItem span:last-child {
+    color: var(--primary-green);
+    font-weight: 900;
+}
+
 .closeStoreBtn {
     background: #EEE;
     border: none;

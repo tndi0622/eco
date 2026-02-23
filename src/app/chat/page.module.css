@@ -47,6 +47,12 @@
     color: #333;
 }
 
+.costHint {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 2rem;
+}
+
 .subText {
     font-size: 1rem;
     color: #666;
@@ -307,11 +313,36 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #F5F5F5;
+    background-color: #F8F9FA;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s;
+}
+
+.attachLabelWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.attachLabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #444;
+}
+
+.tokenCostTag {
+    font-size: 0.65rem;
+    color: #D97706;
+    /* 약간 더 가독성 높은 진한 노란색 */
+    font-weight: 800;
+    background-color: #FFFBEB;
+    /* 연한 노란색 배경으로 토큰 느낌 강조 */
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-top: 2px;
 }
 
 /* Bot Message Enhancement */
@@ -473,6 +504,28 @@
     font-weight: 800;
     font-size: 1.25rem;
     color: #222;
+}
+
+.tokenCostInfo {
+    background-color: #F8F9FA;
+    padding: 0.8rem 1.2rem;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.costRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+}
+
+.costRow span:last-child {
+    color: var(--primary-green);
+    font-weight: 800;
 }
 
 .modalDesc {

@@ -11,7 +11,7 @@ interface UserContextType {
     isAdmin: boolean;
     subscriptionExpiry: string | null;
     adTokensToday: number;
-    useToken: () => boolean;
+    useToken: (cost?: number) => boolean;
     addAdToken: () => Promise<boolean>;
     purchaseTokens: (count: number) => Promise<void>;
     subscribe: () => Promise<void>;
@@ -112,10 +112,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         window.location.reload();
     };
 
-    const useToken = () => {
+    const useToken = (cost: number = 1) => {
         if (isSubscribed || isAdmin) return true;
-        if (tokens > 0) {
-            const nextTokens = tokens - 1;
+        if (tokens >= cost) {
+            const nextTokens = tokens - cost;
             setTokens(nextTokens);
             if (user && supabase) {
                 supabase.from('profiles').update({ tokens: nextTokens }).eq('id', user.id).then();

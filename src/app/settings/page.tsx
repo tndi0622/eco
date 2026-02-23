@@ -416,6 +416,17 @@ export default function Settings() {
                             </div>
                         </div>
 
+                        <div className={styles.tokenCostTable}>
+                            <div className={styles.costItem}>
+                                <span>📋 텍스트 질문</span>
+                                <span>1토큰</span>
+                            </div>
+                            <div className={styles.costItem}>
+                                <span>📷 사진 분석</span>
+                                <span>2토큰</span>
+                            </div>
+                        </div>
+
                         {!isSubscribed && (
                             <div className={styles.premiumCard}>
                                 <div className={styles.premiumHeader}>
