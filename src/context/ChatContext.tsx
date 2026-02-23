@@ -13,6 +13,7 @@ export interface Message {
 interface ChatContextType {
     messages: Message[];
     addMessage: (message: Message) => void;
+    updateMessage: (id: number, content: React.ReactNode) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -24,8 +25,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setMessages((prev) => [...prev, message]);
     };
 
+    const updateMessage = (id: number, content: React.ReactNode) => {
+        setMessages((prev) => prev.map(m => m.id === id ? { ...m, content } : m));
+    };
+
     return (
-        <ChatContext.Provider value={{ messages, addMessage }}>
+        <ChatContext.Provider value={{ messages, addMessage, updateMessage }}>
             {children}
         </ChatContext.Provider>
     );

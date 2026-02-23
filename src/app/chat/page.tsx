@@ -69,7 +69,7 @@ function ChatContent() {
     };
 
     // Use global state instead of local state
-    const { messages, addMessage } = useChat();
+    const { messages, addMessage, updateMessage } = useChat();
     const [input, setInput] = useState('');
 
     useEffect(() => {
@@ -133,137 +133,82 @@ function ChatContent() {
 
         try {
             if (imageBase64) {
-                // Image Analysis Request
+                // Image Analysis (Keep JSON for Vision as it's simpler)
                 const res = await fetch('/api/vision', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: imageBase64, mimeType, location }) // Send location too
+                    body: JSON.stringify({ image: imageBase64, mimeType, location })
                 });
-                data = await res.json();
-                usedKeyword = "이미지 분석 결과";
-            } else {
-                // Text Request
-                const { keyword, modifier } = extractKeyword(queryMock);
-                usedKeyword = keyword;
-                usedModifier = modifier;
+                const data = await res.json();
 
+                if (data.resultType === 'gemini') {
+                    addMessage({
+                        id: Date.now() + Math.random(),
+                        type: 'bot',
+                        content: <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}><FormattedText text={data.message} /></div>,
+                        source: '제공: 에코 이미지 분석 서비스',
+                        avatarUrl: MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)]
+                    });
+                }
+            } else {
+                // Text Request (Streaming)
+                const { keyword } = extractKeyword(queryMock);
                 const locationParam = location && location !== '위치 설정이 필요합니다' && location !== '위치 파악 실패'
                     ? `&loc=${encodeURIComponent(location)}`
                     : '';
 
                 const res = await fetch(`/api/recycle?q=${encodeURIComponent(keyword)}${locationParam}`);
-                data = await res.json();
-            }
 
-            let content: React.ReactNode = '검색 결과가 없습니다.';
-            let source = '출처: 행정안전부_생활쓰레기배출정보';
+                if (!res.ok) {
+                    throw new Error('API request failed');
+                }
 
-            if (data.resultType === 'gemini') {
-                content = (
+                const reader = res.body?.getReader();
+                const decoder = new TextEncoder();
+                const textDecoder = new TextDecoder();
+
+                if (!reader) return;
+
+                const botMessageId = Date.now() + Math.random();
+                // Add initial empty bot message
+                addMessage({
+                    id: botMessageId,
+                    type: 'bot',
+                    content: '',
+                    avatarUrl: MASCOT_IMAGES[0]
+                });
+
+                let fullText = '';
+                let firstChunk = true;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    if (firstChunk) {
+                        setIsThinking(false);
+                        firstChunk = false;
+                    }
+
+                    const chunk = textDecoder.decode(value, { stream: true });
+                    fullText += chunk;
+
+                    updateMessage(botMessageId, (
+                        <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                            <FormattedText text={fullText} />
+                        </div>
+                    ));
+                }
+
+                // Final update with source
+                updateMessage(botMessageId, (
                     <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
-                        <FormattedText text={data.message} />
+                        <FormattedText text={fullText} />
+                        <div style={{ marginTop: '0.8rem', borderTop: '1px solid #eee', paddingTop: '0.8rem', fontSize: '0.8rem', color: '#888' }}>
+                            정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원
+                        </div>
                     </div>
-                );
-                // ... (Bot message creation similar to before)
-                const randomImage = MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)];
-                addMessage({
-                    id: Date.now() + Math.random(),
-                    type: 'bot',
-                    content: content,
-                    source: source,
-                    avatarUrl: randomImage
-                });
-            } else if (data.response && data.response.body) {
-                // Existing Legacy Logic ...
-                // (Simplified for brevity in replacement, but keeping original logic structure is crucial)
-                // Copying logic from original file...
-                source = '출처: 행정안전부_생활쓰레기배출정보';
-                const rawItems = data.response?.body?.items;
-                let realItems: any[] = [];
-                if (rawItems) {
-                    if (Array.isArray(rawItems)) realItems = rawItems;
-                    else if (Array.isArray(rawItems.item)) realItems = rawItems.item;
-                    else if (rawItems.item) realItems = [rawItems.item];
-                }
-
-                if (realItems.length > 0) {
-                    // ... rendering list ...
-                    content = (
-                        <div>
-                            {usedModifier && (
-                                <div style={{ backgroundColor: '#FFF3E0', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.95rem', borderLeft: '4px solid #FF9800' }}>
-                                    <p>💡 <strong>참고하세요!</strong><br />이물질이나 파손 여부를 꼭 확인해주세요.</p>
-                                </div>
-                            )}
-                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                {realItems.map((item: any, idx: number) => (
-                                    <li key={idx} style={{ marginBottom: '1rem', lineHeight: '1.5' }}>
-                                        <span style={{ color: '#27AE60', fontWeight: 'bold' }}>{item.itemNm || item.prdctNm}</span>
-                                        {getJosa(item.itemNm || item.prdctNm, '은/는')} <br />
-                                        <strong>{item.dschgMthd || item.contents}</strong>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    );
-                    addMessage({ id: Date.now(), type: 'bot', content, source, avatarUrl: MASCOT_IMAGES[0] });
-                } else {
-                    addMessage({
-                        id: Date.now(),
-                        type: 'bot',
-                        content: (
-                            <div>
-                                <p>죄송합니다. 관련 정보를 찾지 못했어요. 😥</p>
-                                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                                    정확한 배출 방법은 관할 구청에 문의해보시는 게 가장 정확해요.
-                                </p>
-                                <a
-                                    href="tel:120"
-                                    style={{
-                                        display: 'inline-block',
-                                        marginTop: '1rem',
-                                        padding: '0.6rem 1rem',
-                                        backgroundColor: '#f1f3f5',
-                                        color: '#333',
-                                        borderRadius: '8px',
-                                        textDecoration: 'none',
-                                        fontWeight: '600',
-                                        fontSize: '0.9rem',
-                                        border: '1px solid #dee2e6'
-                                    }}
-                                >
-                                    📞 다산콜센터(120)에 문의하기
-                                </a>
-                            </div>
-                        ),
-                        avatarUrl: '/images/eco_mascot_no.png'
-                    });
-                }
-            } else {
-                addMessage({
-                    id: Date.now(),
-                    type: 'bot',
-                    content: (
-                        <div>
-                            <p>정보를 불러오는데 실패했습니다.</p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                style={{
-                                    marginTop: '0.5rem',
-                                    padding: '0.4rem 0.8rem',
-                                    backgroundColor: '#FF5252',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                🔄 다시 시도하기
-                            </button>
-                        </div>
-                    ),
-                    avatarUrl: '/images/eco_mascot_no.png'
-                });
+                ));
             }
 
         } catch (error) {

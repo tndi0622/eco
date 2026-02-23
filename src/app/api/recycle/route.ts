@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import wasteRules from '@/data/waste_rules.json';
 import { supabase } from '@/lib/supabase';
 
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
@@ -337,22 +339,33 @@ export async function GET(request: Request) {
                    "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"
             `;
 
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text();
+            const result = await model.generateContentStream(prompt);
 
-            return NextResponse.json({
-                resultType: 'gemini',
-                message: responseText,
-                originalData: publicDataItems,
-                collectionData: collectionPointItems,
-                largeWasteData: largeWasteItems,
-                wasteBagData: wasteBagItems,
-                foodWasteData: foodWasteItems,
-                wasteData: wasteInfoItems
+            const stream = new ReadableStream({
+                async start(controller) {
+                    const encoder = new TextEncoder();
+                    try {
+                        for await (const chunk of result.stream) {
+                            const chunkText = chunk.text();
+                            controller.enqueue(encoder.encode(chunkText));
+                        }
+                        controller.close();
+                    } catch (e) {
+                        controller.error(e);
+                    }
+                },
+            });
+
+            return new Response(stream, {
+                headers: {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Transfer-Encoding': 'chunked',
+                },
             });
 
         } catch (error: any) {
             console.error("Gemini Error:", error);
+            return NextResponse.json({ error: '인공지능 서비스 연결 오류' }, { status: 500 });
         }
     }
 
@@ -370,7 +383,6 @@ export async function GET(request: Request) {
 
     // Ultimate Fallback
     return NextResponse.json({
-        resultType: 'gemini',
         message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
-    });
+    }, { status: 500 });
 }
