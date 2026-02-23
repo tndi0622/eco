@@ -148,6 +148,16 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 return;
             }
             setIsLoading(true);
+
+            // 모바일 브라우저의 경우 HTTPS가 아니면 위치 정보 기능을 차단할 수 있습니다.
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                const msg = "보안 연결(HTTPS)이 필요합니다";
+                setLocation(msg);
+                setIsLoading(false);
+                resolve({ address: msg, coordinates: null, error: msg });
+                return;
+            }
+
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     const { latitude, longitude } = position.coords;
@@ -165,21 +175,28 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
                         let addr = "";
                         if (data.address) {
-                            const province = data.address.province || data.address.city || data.address.state || "";
-                            let sigungu = data.address.city_district || data.address.county || data.address.city || "";
-                            if (sigungu === province) sigungu = "";
+                            const a = data.address;
+                            // 광역단체: 경기도, 서울특별시 등
+                            const province = a.province || a.city || a.state || "";
+                            // 기초단체: 수원시, 강남구 등
+                            const city = a.city || a.county || a.district || "";
+                            // 구: 영통구 등 (city_district가 있는 경우)
+                            const district = a.city_district || "";
+                            // 동/읍/면: 영통동, 매탄동 등
+                            const town = a.town || a.village || a.suburb || a.neighbourhood || a.hamlet || "";
+                            // 도로명/지번
+                            const road = a.road || a.pedestrian || "";
+                            const houseNumber = a.house_number || "";
+                            const building = a.building || a.amenity || a.office || "";
 
-                            const neighborhood = data.address.neighbourhood || data.address.suburb || data.address.quarter || data.address.village || data.address.town || "";
-                            const road = data.address.road || "";
-                            const houseNumber = data.address.house_number || "";
-                            const building = data.address.building || data.address.amenity || "";
-
-                            // 한국 실정에 맞춰 시/도 + 시/군/구 + 동/읍/면 단위로 우선 구성
-                            const parts = [sigungu, neighborhood, road, houseNumber]
-                                .filter((part) => Boolean(part) && part !== province);
-
-                            // 도(province)는 항상 제일 앞에 배치
-                            if (province) parts.unshift(province);
+                            // 주소 조각 모으기 (중복 제거 포함)
+                            const parts: string[] = [];
+                            if (province) parts.push(province);
+                            if (city && city !== province) parts.push(city);
+                            if (district && district !== city) parts.push(district);
+                            if (town && !parts.includes(town)) parts.push(town);
+                            if (road && !parts.includes(road)) parts.push(road);
+                            if (houseNumber) parts.push(houseNumber);
 
                             addr = parts.join(" ").trim();
 
@@ -205,10 +222,18 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 },
                 (error) => {
                     console.error("Geolocation error", error);
-                    const msg = error.code === 1 ? "위치 권한을 허용해주세요" : "위치 파악 실패";
+                    let msg = "위치 파악 실패";
+                    if (error.code === 1) msg = "위치 권한을 허용해주세요";
+                    else if (error.code === 3) msg = "위치 확인 시간 초과";
+
                     setLocation(msg);
                     setIsLoading(false);
                     resolve({ address: msg, coordinates: null, error: msg });
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 }
             );
         });
