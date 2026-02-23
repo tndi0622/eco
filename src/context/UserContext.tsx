@@ -116,7 +116,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setTokens(1);
         setIsSubscribed(false);
         setIsAdmin(false);
-        localStorage.clear();
+        // Do not clear everything, only user-specific persistent data
+        localStorage.removeItem('userTokens');
+        localStorage.removeItem('adTokensToday');
+        localStorage.removeItem('userCoordinates');
+        // Keep favorites if you want them to persist locally, or clear if they are strictly user-bound
+        localStorage.removeItem('userLocation');
         window.location.reload();
     };
 

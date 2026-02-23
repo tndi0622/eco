@@ -16,7 +16,7 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchPlaceholder, setSearchPlaceholder] = useState('예: 깨진 유리, 매트리스');
-  const { location, coordinates } = useLocation();
+  const { location } = useLocation();
   const { user, loginWithGoogle } = useUser();
   const router = useRouter();
 
@@ -83,25 +83,30 @@ export default function Home() {
   }>({ status: 'loading', message: '정보를 불러오는 중...' });
 
   useEffect(() => {
-    // Check Splash Status
-    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
+    // Check Splash Status (Use localStorage to prevent seeing it every tab open)
+    const hasSeenSplash = localStorage.getItem('hasSeenSplash');
 
     // Check Onboarding Status
     const hasOnboarded = localStorage.getItem('hasOnboarded');
 
+    // If already logged in, we can skip onboarding
+    if (user && !hasOnboarded) {
+      localStorage.setItem('hasOnboarded', 'true');
+    }
+
     if (hasSeenSplash) {
       setShowSplash(false);
-      if (!hasOnboarded) setShowOnboarding(true);
+      if (!hasOnboarded && !user) setShowOnboarding(true);
     } else {
       setShowSplash(true);
       // Wait for splash animation (2.5s) then show onboarding if needed
-      if (!hasOnboarded) {
+      if (!hasOnboarded && !user) {
         setTimeout(() => {
           setShowOnboarding(true);
         }, 2500);
       }
     }
-  }, []);
+  }, [user]);
 
   // Placeholder Logic
   useEffect(() => {
@@ -109,10 +114,8 @@ export default function Home() {
   }, []);
 
   // Fetch Today's Recycle Info based on Location
-  // Fetch Today's Recycle Info based on Location
   useEffect(() => {
     const fetchTodayRecycleInfo = async () => {
-      // If location isn't set yet or invalid
       if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
         setTodayRecycleStatus({
           status: 'error',
@@ -124,9 +127,8 @@ export default function Home() {
       const parts = location.split(' ');
       const sido = parts[0];
       const sigungu = parts[1];
-      const dong = parts[2]; // Can be undefined
+      const dong = parts[2];
 
-      // Need at least sido/sigungu
       if (!sido || !sigungu) {
         setTodayRecycleStatus({
           status: 'error',
@@ -146,10 +148,9 @@ export default function Home() {
         const data = await res.json();
 
         if (data.rules && data.rules.length > 0) {
-          // Logic to determine today's discharge based on rules
           const dayMap: { [key: number]: string } = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
-          const todayDay = new Date().getDay(); // 0-6
-          const todayChar = dayMap[todayDay]; // '일', '월', ...
+          const todayDay = new Date().getDay();
+          const todayChar = dayMap[todayDay];
 
           let todayItems: string[] = [];
           let timeInfo = '';
@@ -171,7 +172,6 @@ export default function Home() {
             }
           });
 
-          // Deduplicate
           todayItems = [...new Set(todayItems)];
 
           if (todayItems.length > 0) {
@@ -188,9 +188,8 @@ export default function Home() {
             });
           }
         } else {
-          // Fallback for demo if no rules found
           setTodayRecycleStatus({
-            status: 'error', // Treating 'no rules' as a soft error/info provided default
+            status: 'error',
             message: '관할 구청 데이터 없음',
             items: '기본 정보 참고',
             time: '18:00 ~ 24:00'
@@ -208,20 +207,13 @@ export default function Home() {
     fetchTodayRecycleInfo();
   }, [location]);
 
-  // ... (useLocation effect) ...
-
-
-
   // Location Prompt & Toast Logic
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    // Check if location is set
-    // We consider '위치 설정이 필요합니다' or null as not set
     if (!location || location === '위치 설정이 필요합니다') {
       setShowLocationPrompt(true);
-      // Show toast after a small delay
       const timer = setTimeout(() => {
         setShowToast(true);
       }, 1500);
@@ -234,10 +226,9 @@ export default function Home() {
 
   const handleSplashFinish = () => {
     setShowSplash(false);
-    sessionStorage.setItem('hasSeenSplash', 'true');
+    localStorage.setItem('hasSeenSplash', 'true');
   };
 
-  // If status is null (initializing), render a hidden div to use the styles prevents preload warning
   if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
 
   if (showSplash) {
@@ -258,7 +249,6 @@ export default function Home() {
     );
   }
 
-  // Login Screen if not authenticated
   if (!user) {
     return (
       <div className={styles.loginOverlay}>
@@ -283,10 +273,7 @@ export default function Home() {
     );
   }
 
-
   const handleVoiceSearch = () => {
-    // Redirect to chat with voice mode trigger (optional implementation in chat page)
-    // or just simple redirect for now where user can press mic there
     router.push('/chat?mode=voice');
   };
 
@@ -298,23 +285,16 @@ export default function Home() {
     }
   };
 
-
   return (
     <div className={styles.containerMinimal}>
       <div className={styles.contentWrapper}>
-        {/* 1. Hero Entry Section */}
         <section className={styles.heroEntry}>
-          <img
-            src="/images/eco_mascot_question.png"
-            alt="Questioning Eco Mascot"
-            className={styles.heroMascot}
-          />
+          <img src="/images/eco_mascot_question.png" alt="Mascot" className={styles.heroMascot} />
           <h1 className={styles.heroTitleMinimal}>
             버리기 헷갈릴 때,<br />
             <span className={styles.highlight}>바로 알려드려요</span>
           </h1>
 
-          {/* Location Prompt Text (Optional: Insert if you want it near title) */}
           {showLocationPrompt && (
             <div style={{ fontSize: '0.85rem', color: '#ff5252', marginTop: '-0.5rem', marginBottom: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
               <div className={styles.locationPrompt}></div>
@@ -323,35 +303,14 @@ export default function Home() {
           )}
 
           <form onSubmit={handleSearch} className={styles.searchFormMinimal}>
-            {/* Left: Camera Button */}
-            <button
-              type="button"
-              className={styles.iconBtnLeft}
-              onClick={() => fileInputRef.current?.click()}
-              title="사진으로 찾기"
-            >
+            <button type="button" className={styles.iconBtnLeft} onClick={() => fileInputRef.current?.click()}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                 <circle cx="12" cy="13" r="4"></circle>
               </svg>
             </button>
-
-            <input
-              type="text"
-              className={styles.inputMinimal}
-              placeholder={searchPlaceholder}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-
-            {/* Right: Voice & Search Buttons */}
-            {/* Mic Button */}
-            <button
-              type="button"
-              className={styles.iconBtnRight}
-              onClick={handleVoiceSearch}
-              title="음성으로 찾기"
-            >
+            <input type="text" className={styles.inputMinimal} placeholder={searchPlaceholder} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+            <button type="button" className={styles.iconBtnRight} onClick={handleVoiceSearch}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -359,7 +318,6 @@ export default function Home() {
                 <line x1="8" y1="23" x2="16" y2="23"></line>
               </svg>
             </button>
-
             <button type="submit" className={styles.searchBtnMinimal}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -368,7 +326,6 @@ export default function Home() {
             </button>
           </form>
 
-          {/* 1.5 Recent & Recommended Chips */}
           <div className={styles.recommendSection}>
             {recentSearches.length > 0 && (
               <div style={{ marginBottom: '1rem' }}>
@@ -386,7 +343,6 @@ export default function Home() {
                 </div>
               </div>
             )}
-
             <div className={styles.recommendTitle}>추천 검색어</div>
             <div className={styles.chipContainer}>
               {RECOMMENDED_KEYWORDS.map((keyword, idx) => (
@@ -397,54 +353,28 @@ export default function Home() {
             </div>
           </div>
 
-
-
-          {/* Hidden File Input */}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            onChange={handlePhotoUpload}
-          />
-
+          <input type="file" accept="image/*" capture="environment" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </section>
 
-        {/* 2. Today's Discharge (Context) */}
         <section className={styles.todayContext}>
           <div className={styles.contextLabel}>오늘의 배출</div>
-
-          {todayRecycleStatus.status === 'loading' && (
-            <div className={styles.contextValue} style={{ color: '#999' }}>정보를 불러오는 중...</div>
-          )}
-
+          {todayRecycleStatus.status === 'loading' && <div className={styles.contextValue} style={{ color: '#999' }}>정보를 불러오는 중...</div>}
           {todayRecycleStatus.status === 'success' && (
             <>
               <div className={styles.contextValue}>{todayRecycleStatus.items}</div>
               <div className={styles.contextTime}>{todayRecycleStatus.time}</div>
             </>
           )}
-
-          {todayRecycleStatus.status === 'empty' && (
-            <div className={styles.contextValue} style={{ color: '#666' }}>{todayRecycleStatus.message}</div>
-          )}
-
+          {todayRecycleStatus.status === 'empty' && <div className={styles.contextValue} style={{ color: '#666' }}>{todayRecycleStatus.message}</div>}
           {todayRecycleStatus.status === 'error' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div className={styles.contextValue} style={{ color: '#FF5252', fontSize: '1rem' }}>
-                {todayRecycleStatus.message}
-              </div>
-              {todayRecycleStatus.items && (
-                <div style={{ fontSize: '0.8rem', color: '#999' }}>{todayRecycleStatus.items}</div>
-              )}
+              <div className={styles.contextValue} style={{ color: '#FF5252' }}>{todayRecycleStatus.message}</div>
+              {todayRecycleStatus.items && <div style={{ fontSize: '0.8rem', color: '#999' }}>{todayRecycleStatus.items}</div>}
             </div>
           )}
         </section>
       </div>
 
-
-      {/* Toast Notification */}
       <div className={`${styles.toast} ${showToast ? styles.show : ''}`} onClick={() => router.push('/settings')}>
         <div className={styles.toastContent}>
           <span className={styles.toastIcon}>📍</span>
@@ -452,6 +382,6 @@ export default function Home() {
         </div>
         <button className={styles.toastClose} onClick={(e) => { e.stopPropagation(); setShowToast(false); }}>×</button>
       </div>
-    </div >
+    </div>
   );
 }
