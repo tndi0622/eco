@@ -9,53 +9,56 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
     }
 
-    // 디버깅을 위해 잠시 하드코딩 (테스트 후 반드시 삭제)
-    const apiKey = '7db389d1b3535a35714bf9a5bc89589f';
+    const apiKey = process.env.KAKAO_REST_API_KEY;
+
+    if (!apiKey) {
+        console.error('KAKAO_REST_API_KEY is not defined in environment variables');
+        return NextResponse.json({ error: 'API 키 설정이 누락되었습니다' }, { status: 500 });
+    }
 
     try {
-        // 카카오 로컬 API (좌표 -> 주소 변환) 호출
-        const res = await fetch(
-            `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lon}&y=${lat}`,
+        // 1. Photon API (가장 안정적이고 제한이 적음)
+        const photonRes = await fetch(
+            `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`,
+            { headers: { 'Accept-Language': 'ko' } }
+        );
+
+        if (photonRes.ok) {
+            const data = await photonRes.json();
+            if (data.features && data.features.length > 0) {
+                const p = data.features[0].properties;
+                return NextResponse.json({
+                    address: {
+                        province: p.state || p.city || "",
+                        city: p.city || p.county || "",
+                        suburb: p.district || p.suburb || "",
+                        road: p.street || p.name || "",
+                        house_number: p.housenumber || "",
+                        building: p.name !== p.street ? p.name : ""
+                    },
+                    display_name: p.name || "주소를 찾았습니다"
+                });
+            }
+        }
+
+        // 2. Photon 실패 시 Nominatim 시도 (User-Agent 포함하여 차단 우회)
+        const nominatimRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ko`,
             {
                 headers: {
-                    'Authorization': `KakaoAK ${apiKey}`
+                    'User-Agent': 'EcoRecycleApp/1.3 (admin@eco-recycle.com)'
                 }
             }
         );
 
-        if (!res.ok) {
-            const errorBody = await res.json();
-            console.error('Kakao API Error details:', errorBody);
-            return NextResponse.json(
-                { error: `지도 서비스 응답 일시 제한 (${res.status})`, details: errorBody },
-                { status: res.status }
-            );
+        if (nominatimRes.ok) {
+            const n = await nominatimRes.json();
+            return NextResponse.json(n);
         }
 
-        const data = await res.json();
-
-        if (data.documents && data.documents.length > 0) {
-            const doc = data.documents[0];
-            const address = doc.road_address || doc.address;
-
-            // 기존 앱 로직과 호환되는 포맷으로 변환
-            return NextResponse.json({
-                address: {
-                    province: address.region_1depth_name || "",
-                    city: address.region_2depth_name || "",
-                    city_district: "", // 카카오는 상위 필드에 포함됨
-                    suburb: address.region_3depth_name || "",
-                    road: address.road_name || "",
-                    house_number: address.main_building_no || "",
-                    building: address.building_name || ""
-                },
-                display_name: address.address_name
-            });
-        }
-
-        return NextResponse.json({ error: '주소를 찾을 수 없습니다' }, { status: 404 });
+        return NextResponse.json({ error: '지도 서비스 응답 일시 제한' }, { status: 503 });
     } catch (error) {
-        console.error('Kakao Geocoding error:', error);
+        console.error('Geocoding error:', error);
         return NextResponse.json({ error: '위치 정보를 가져오지 못했습니다' }, { status: 500 });
     }
 }
