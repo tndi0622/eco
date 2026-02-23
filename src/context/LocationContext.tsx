@@ -155,7 +155,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
                     try {
                         const res = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&accept-language=ko`
+                            `/api/geocoding/reverse?lat=${latitude}&lon=${longitude}`
                         );
                         const data = await res.json();
 
