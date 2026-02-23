@@ -159,31 +159,37 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                         );
                         const data = await res.json();
 
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+
                         let addr = "";
                         if (data.address) {
                             const province = data.address.province || data.address.city || data.address.state || "";
-                            let city = data.address.city || data.address.county || "";
-                            if (city === province) city = "";
-                            const district = data.address.borough || data.address.suburb || data.address.district || "";
-                            const town = data.address.town || "";
-                            const village = data.address.village || data.address.hamlet || "";
-                            const neighborhood = data.address.neighbourhood || data.address.quarter || "";
-                            const road = data.address.road || data.address.pedestrian || data.address.highway || "";
+                            let sigungu = data.address.city_district || data.address.county || data.address.city || "";
+                            if (sigungu === province) sigungu = "";
+
+                            const neighborhood = data.address.neighbourhood || data.address.suburb || data.address.quarter || data.address.village || data.address.town || "";
+                            const road = data.address.road || "";
                             const houseNumber = data.address.house_number || "";
-                            const building = data.address.building || data.address.amenity || data.address.leisure || data.address.tourism || data.address.shop || "";
+                            const building = data.address.building || data.address.amenity || "";
 
-                            const parts = [
-                                province, city, district, town, neighborhood, village, road, houseNumber
-                            ].filter((part, index, self) =>
-                                Boolean(part) && self.indexOf(part) === index
-                            );
+                            // 한국 실정에 맞춰 시/도 + 시/군/구 + 동/읍/면 단위로 우선 구성
+                            const parts = [sigungu, neighborhood, road, houseNumber]
+                                .filter((part) => Boolean(part) && part !== province);
 
-                            addr = parts.join(" ");
+                            // 도(province)는 항상 제일 앞에 배치
+                            if (province) parts.unshift(province);
+
+                            addr = parts.join(" ").trim();
+
                             if (building && !addr.includes(building)) {
                                 addr += ` (${building})`;
                             }
-                        } else {
-                            addr = data.display_name || "알 수 없는 위치";
+                        }
+
+                        if (!addr) {
+                            addr = data.display_name || "위치 정보를 찾을 수 없습니다";
                         }
 
                         setLocation(addr);

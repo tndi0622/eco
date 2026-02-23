@@ -96,10 +96,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const loginWithGoogle = async () => {
         if (!supabase) return;
+
+        // 현재 사이트가 로컬인지 실서버인지에 따라 리다이렉트 URL 결정
+        const origin = window.location.origin;
+
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + '/settings',
+                redirectTo: `${origin}/settings`,
                 queryParams: {
                     prompt: 'select_account'
                 }
