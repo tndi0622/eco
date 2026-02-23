@@ -11,6 +11,11 @@ export async function GET(request: NextRequest) {
 
     const apiKey = process.env.KAKAO_REST_API_KEY;
 
+    if (!apiKey) {
+        console.error('KAKAO_REST_API_KEY is not defined in environment variables');
+        return NextResponse.json({ error: 'API 키 설정이 누락되었습니다' }, { status: 500 });
+    }
+
     try {
         // 카카오 로컬 API (좌표 -> 주소 변환) 호출
         const res = await fetch(
