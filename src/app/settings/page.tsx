@@ -13,6 +13,7 @@ export default function Settings() {
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
     const [newName, setNewName] = useState('');
+    const [nameError, setNameError] = useState(false);
     const [showStoreModal, setShowStoreModal] = useState(false);
 
     const [editTarget, setEditTarget] = useState<{ name: string, address: string } | null>(null);
@@ -158,7 +159,11 @@ export default function Settings() {
     };
 
     const handleSaveLocation = () => {
-        if (!newName.trim()) return;
+        if (!newName.trim()) {
+            setNameError(true);
+            alert('위치의 이름을 입력해 주세요.');
+            return;
+        }
 
         if (editTarget) {
             // Update existing
@@ -378,12 +383,16 @@ export default function Settings() {
                         <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', color: '#666', marginBottom: '0.3rem' }}>이름</label>
                             <input
-                                className={styles.modalInput}
+                                className={`${styles.modalInput} ${nameError ? styles.inputError : ''}`}
                                 placeholder="예: 우리집, 회사, 본가"
                                 value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
+                                onChange={(e) => {
+                                    setNewName(e.target.value);
+                                    if (e.target.value.trim()) setNameError(false);
+                                }}
                                 autoFocus
                             />
+                            {nameError && <div style={{ color: '#ff4d4f', fontSize: '0.8rem', marginTop: '0.4rem' }}>위치 이름을 입력해 주세요.</div>}
                         </div>
 
                         <div className={styles.modalActions}>

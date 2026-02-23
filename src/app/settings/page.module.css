@@ -445,6 +445,15 @@ input:checked+.slider:before {
     outline: none;
 }
 
+.inputError {
+    border-color: #ff4d4f !important;
+}
+
+.inputError:focus {
+    border-color: #ff4d4f !important;
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.1);
+}
+
 .modalActions {
     display: flex;
     gap: 0.8rem;
