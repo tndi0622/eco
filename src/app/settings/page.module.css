@@ -560,3 +560,261 @@ input:checked+.slider:before {
 .menuItem.delete:hover {
     background-color: #FFF5F5;
 }
+
+/* Store Section Styles */
+.storeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bundleCard {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    border: 1px solid #E0E0E0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.bundleCard:active {
+    transform: scale(0.98);
+}
+
+.bundleInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.bundleName {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #222;
+}
+
+.bundlePrice {
+    font-size: 0.9rem;
+    color: var(--primary-green);
+    font-weight: 700;
+}
+
+.buyBtn {
+    background-color: var(--primary-green);
+    color: white;
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.premiumCard {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    padding: 1.5rem;
+    border-radius: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+}
+
+.premiumCard::after {
+    content: '✨';
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 5rem;
+    opacity: 0.1;
+}
+
+.premiumHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.premiumBadge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+}
+
+.premiumTitle {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.premiumDesc {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 1.2rem;
+    line-height: 1.5;
+}
+
+.subscribeBtn {
+    background-color: white;
+    color: #059669;
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.userStatus {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #E0E0E0;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.userStatus:active {
+    transform: scale(0.98);
+}
+
+.statusLeft {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.statusItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.statusLabel {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.statusValue {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #1e293b;
+}
+
+.loginBtn {
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    color: #374151;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.googleIcon {
+    background-color: #DB4437;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 900;
+}
+
+.logoutBtn {
+    background: none;
+    border: 1px solid #E5E7EB;
+    color: #6B7280;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+
+.storeLink {
+    color: var(--primary-green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+/* Store Modal Styles */
+.storeModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #F9FAFB;
+    /* Full page feel */
+    z-index: 2000;
+    overflow-y: auto;
+    padding: 1.5rem;
+    padding-bottom: 5rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.storeModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.storeModalTitle {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #222;
+}
+
+.closeStoreBtn {
+    background: #EEE;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.storeModalContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}

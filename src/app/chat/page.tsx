@@ -9,6 +9,7 @@ import { useChat } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
 import ChatSkeleton from './ChatSkeleton';
 import FormattedText from '@/components/FormattedText';
+import { useUser } from '@/context/UserContext';
 
 function FeedbackButtons() {
     const [activeType, setActiveType] = useState<'positive' | 'negative' | null>(null);
@@ -58,6 +59,10 @@ function ChatContent() {
 
     // UI State for Attach Menu
     const [showAttachMenu, setShowAttachMenu] = useState(false);
+    const [showTokenModal, setShowTokenModal] = useState(false);
+    const [isAdLoading, setIsAdLoading] = useState(false);
+
+    const { tokens, isSubscribed, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -426,15 +431,42 @@ function ChatContent() {
     };
 
     const sendMessage = (text: string) => {
-        addMessage({ id: Date.now(), type: 'user', content: text });
-        setInput('');
-        fetchRecycleInfo(text);
+        if (!isSubscribed && tokens <= 0) {
+            setShowTokenModal(true);
+            return;
+        }
+
+        if (useToken()) {
+            addMessage({ id: Date.now(), type: 'user', content: text });
+            setInput('');
+            fetchRecycleInfo(text);
+        } else {
+            setShowTokenModal(true);
+        }
+    };
+
+    const handleWatchAd = async () => {
+        setIsAdLoading(true);
+        const success = await addAdToken();
+        setIsAdLoading(false);
+        if (success) {
+            setShowTokenModal(false);
+            alert('광고 시청 완료! 토큰 1개가 충전되었습니다. 😊');
+        } else {
+            alert('오늘의 광고 시청 횟수(3회)를 모두 사용했습니다.');
+        }
     };
 
 
 
     return (
         <div className={styles.container}>
+            {/* Token Status */}
+            <div className={styles.tokenStatus} onClick={() => setShowTokenModal(true)}>
+                <span className={styles.tokenIcon}>💎</span>
+                <span>{isSubscribed ? '무제한' : `${tokens}개`}</span>
+            </div>
+
             <input
                 type="file"
                 accept="image/*"
@@ -525,6 +557,66 @@ function ChatContent() {
                     </button>
                 </form>
             </div>
+
+            {/* Token/Recharge Modal */}
+            {showTokenModal && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.tokenModal}>
+                        {isAdLoading ? (
+                            <div className={styles.adLoading}>
+                                <div className={styles.spinner}></div>
+                                <p>광고를 불러오는 중입니다...</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={styles.modalIcon}>💎</div>
+                                <div className={styles.modalTitle}>토큰이 부족해요!</div>
+                                <p className={styles.modalDesc}>
+                                    계속 질문하려면 광고를 보거나<br />
+                                    토큰을 충전해 주세요.
+                                </p>
+
+                                <div className={styles.rechargeGrid}>
+                                    <button className={`${styles.rechargeBtn} ${styles.rewardBtn}`} onClick={handleWatchAd}>
+                                        <div className={styles.rechargeLabel}>
+                                            📺 <span>광고 보고 충전</span>
+                                        </div>
+                                        <span className={styles.rechargeValue} style={{ color: 'white' }}>무료 (오늘 {adTokensToday}/3)</span>
+                                    </button>
+
+                                    <button className={styles.rechargeBtn} onClick={() => {
+                                        if (confirm('토큰 10개를 1,100원에 구매하시겠습니까?')) {
+                                            purchaseTokens(10);
+                                            setShowTokenModal(false);
+                                            alert('구매 완료!');
+                                        }
+                                    }}>
+                                        <div className={styles.rechargeLabel}>
+                                            💎 <span>토큰 10개 구매</span>
+                                        </div>
+                                        <span className={styles.rechargeValue}>₩1,100</span>
+                                    </button>
+
+                                    <button className={styles.rechargeBtn} style={{ borderColor: '#10B981' }} onClick={() => {
+                                        if (confirm('월 2,900원에 프리미엄 멤버십을 시작하시겠습니까?')) {
+                                            subscribe();
+                                            setShowTokenModal(false);
+                                            alert('프리미엄 회원이 되신 것을 환영합니다! ✨');
+                                        }
+                                    }}>
+                                        <div className={styles.rechargeLabel}>
+                                            ✨ <span>에코 프로 구독</span>
+                                        </div>
+                                        <span className={styles.rechargeValue}>월 ₩2,900</span>
+                                    </button>
+                                </div>
+
+                                <span className={styles.closeModal} onClick={() => setShowTokenModal(false)}>다음에 할게요</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

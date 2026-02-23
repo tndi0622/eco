@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
+import { useUser } from '@/context/UserContext';
+
+// Simple Toggle Component
+const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
+    <div className={`${styles.toggle} ${active ? styles.active : ''}`} onClick={onClick}>
+        <div className={styles.slider} />
+    </div>
+);
 
 
 const dayMap: { [key: string]: number } = {
@@ -15,6 +23,29 @@ export default function Calendar() {
     const [today, setToday] = useState<Date | null>(null);
     const [holidays, setHolidays] = useState<any[]>([]);
     const { location } = useLocation();
+    const { isSubscribed } = useUser();
+
+    // Notification State
+    const [notificationSettings, setNotificationSettings] = useState({
+        general: false,
+        recycle: false,
+        food: false
+    });
+
+    useEffect(() => {
+        const saved = localStorage.getItem('notificationSettings');
+        if (saved) setNotificationSettings(JSON.parse(saved));
+    }, []);
+
+    const handleToggleNotification = (key: keyof typeof notificationSettings) => {
+        if (!isSubscribed) {
+            alert('배출 알림은 프리미엄 멤버십 전용 기능입니다. ✨');
+            return;
+        }
+        const next = { ...notificationSettings, [key]: !notificationSettings[key] };
+        setNotificationSettings(next);
+        localStorage.setItem('notificationSettings', JSON.stringify(next));
+    };
 
     // Default Schedule (Fallback)
     const defaultSchedule: { [key: number]: string } = {
@@ -315,7 +346,37 @@ export default function Calendar() {
                             📞 대형폐기물 신청
                         </button>
                     )}
-                    {/* Chat button removed to keep calendar focused on verification */}
+                </div>
+
+                {/* Notification Settings Embedded in Calendar */}
+                <div className={styles.notiSection}>
+                    <div className={styles.notiHeader}>맞춤 알림 설정</div>
+                    <div className={styles.notificationList}>
+                        <div className={styles.notificationItem}>
+                            <div className={styles.notiInfo}>
+                                <div className={styles.notiLabel}>일반쓰레기 알림</div>
+                                <div className={styles.notiDesc}>배출 당일 오전 9시 알림</div>
+                            </div>
+                            <Toggle active={notificationSettings.general} onClick={() => handleToggleNotification('general')} />
+                        </div>
+                        <div className={styles.notificationItem}>
+                            <div className={styles.notiInfo}>
+                                <div className={styles.notiLabel}>재활용 알림</div>
+                                <div className={styles.notiDesc}>배출 당일 오전 9시 알림</div>
+                            </div>
+                            <Toggle active={notificationSettings.recycle} onClick={() => handleToggleNotification('recycle')} />
+                        </div>
+                        <div className={styles.notificationItem}>
+                            <div className={styles.notiInfo}>
+                                <div className={styles.notiLabel}>음식물 알림</div>
+                                <div className={styles.notiDesc}>배출 당일 오전 9시 알림</div>
+                            </div>
+                            <Toggle active={notificationSettings.food} onClick={() => handleToggleNotification('food')} />
+                        </div>
+                    </div>
+                    {!isSubscribed && (
+                        <div className={styles.premiumBadgeCal}>PREMIUM</div>
+                    )}
                 </div>
             </section>
         </div>

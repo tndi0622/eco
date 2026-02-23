@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import AddressSearch from '@/components/AddressSearch';
+import { useUser } from '@/context/UserContext';
 
 export default function Settings() {
     const { location, favorites, addFavorite, removeFavorite, updateFavorite, promoteFavorite, detectLocation } = useLocation();
+    const { tokens, isSubscribed, isAdmin, subscribe, purchaseTokens, user, loginWithGoogle, logout } = useUser();
     const [showAddressSearch, setShowAddressSearch] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
     const [newName, setNewName] = useState('');
+    const [showStoreModal, setShowStoreModal] = useState(false);
 
     const [editTarget, setEditTarget] = useState<{ name: string, address: string } | null>(null);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -202,6 +205,19 @@ export default function Settings() {
         <div className={styles.container}>
 
 
+            {/* User Profile Bar (Compact) */}
+            <section className={styles.section}>
+                <div className={styles.userStatus} style={{ cursor: 'default', backgroundColor: '#F8F9FA' }}>
+                    <div className={styles.statusLeft}>
+                        <div className={styles.statusItem} style={{ alignItems: 'flex-start' }}>
+                            <span className={styles.statusLabel}>로그인 계정</span>
+                            <span className={styles.statusValue} style={{ fontSize: '0.9rem' }}>{user?.email || '비로그인'}</span>
+                        </div>
+                    </div>
+                    {user && <button className={styles.logoutBtn} onClick={logout}>로그아웃</button>}
+                </div>
+            </section>
+
             {/* Location Management Section */}
             <section className={styles.section}>
                 <div className={styles.header}>내 위치 관리</div>
@@ -282,39 +298,28 @@ export default function Settings() {
                 </div>
             </section>
 
-            {/* Notification Section */}
+
+
+            {/* Store & Membership Section - Compact Entry */}
             <section className={styles.section}>
-                <div className={styles.header}>맞춤 알림 설정</div>
-                <div className={styles.notificationList}>
-                    {/* General Waste */}
-                    <div className={styles.notificationItem}>
-                        <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}> 일반쓰레기</div>
-                            <div className={styles.notiDesc}>{wasteScheduler.general}</div>
-                        </div>
-                        <Toggle active={notificationSettings.general} onClick={() => handleToggleNotification('general')} />
-                    </div>
+                <div className={styles.header}>에코 멤버십 & 상점</div>
 
-                    {/* Recycle */}
-                    <div className={styles.notificationItem}>
-                        <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}> 재활용</div>
-                            <div className={styles.notiDesc}>{wasteScheduler.recycle}</div>
+                <div className={styles.userStatus} onClick={() => setShowStoreModal(true)}>
+                    <div className={styles.statusLeft}>
+                        <div className={styles.statusItem}>
+                            <span className={styles.statusLabel}>보유 토큰</span>
+                            <span className={styles.statusValue}>{isSubscribed ? '무제한' : `${tokens}개`}</span>
                         </div>
-                        <Toggle active={notificationSettings.recycle} onClick={() => handleToggleNotification('recycle')} />
+                        <div className={styles.statusItem}>
+                            <span className={styles.statusLabel}>멤버십 상태</span>
+                            <span className={styles.statusValue}>{isAdmin ? '관리자' : isSubscribed ? '프리미엄' : '일반'}</span>
+                        </div>
                     </div>
-
-                    {/* Food Waste */}
-                    <div className={styles.notificationItem}>
-                        <div className={styles.notiInfo}>
-                            <div className={styles.notiLabel}> 음식물</div>
-                            <div className={styles.notiDesc}>{wasteScheduler.food}</div>
-                        </div>
-                        <Toggle active={notificationSettings.food} onClick={() => handleToggleNotification('food')} />
+                    <div className={styles.storeLink}>
+                        충전 및 관리 <span>&rsaquo;</span>
                     </div>
                 </div>
             </section>
-
 
             {/* Department Contact Section - Dynamic based on Location */}
             <section className={styles.section}>
@@ -384,6 +389,84 @@ export default function Settings() {
                         <div className={styles.modalActions}>
                             <button className={styles.modalCancel} onClick={() => { setShowNameModal(false); setEditTarget(null); }}>취소</button>
                             <button className={styles.modalSave} onClick={handleSaveLocation}>저장하기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Store Full-Screen Modal */}
+            {showStoreModal && (
+                <div className={styles.storeModalOverlay}>
+                    <div className={styles.storeModalHeader}>
+                        <div className={styles.storeModalTitle}>에코 상점</div>
+                        <button className={styles.closeStoreBtn} onClick={() => setShowStoreModal(false)}>&times;</button>
+                    </div>
+
+                    <div className={styles.storeModalContent}>
+                        <div className={styles.userStatus} style={{ cursor: 'default' }}>
+                            <div className={styles.statusLeft}>
+                                <div className={styles.statusItem}>
+                                    <span className={styles.statusLabel}>보유 토큰</span>
+                                    <span className={styles.statusValue}>{isSubscribed ? '무제한' : `${tokens}개`}</span>
+                                </div>
+                                <div className={styles.statusItem}>
+                                    <span className={styles.statusLabel}>멤버십 상태</span>
+                                    <span className={styles.statusValue}>{isAdmin ? '관리자' : isSubscribed ? '프리미엄' : '일반'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {!isSubscribed && (
+                            <div className={styles.premiumCard}>
+                                <div className={styles.premiumHeader}>
+                                    <span className={styles.premiumBadge}>Premium</span>
+                                    <span className={styles.premiumTitle}>에코 프로 구독</span>
+                                </div>
+                                <p className={styles.premiumDesc}>
+                                    광고 없이 무제한 질문, 배출 요일 알림 서비스 등 모든 기능을 자유롭게 이용하세요.
+                                </p>
+                                <button className={styles.subscribeBtn} onClick={() => {
+                                    if (confirm('월 2,900원에 프리미엄 멤버십을 시작하시겠습니까?')) {
+                                        subscribe();
+                                        alert('축하합니다! 이제 에코 프로 회원입니다.');
+                                    }
+                                }}>
+                                    월 2,900원에 시작하기
+                                </button>
+                            </div>
+                        )}
+
+                        <div className={styles.storeGrid}>
+                            <div className={styles.bundleCard}>
+                                <div className={styles.bundleInfo}>
+                                    <span className={styles.bundleName}>토큰 10개</span>
+                                    <span className={styles.bundlePrice}>₩1,100</span>
+                                </div>
+                                <button className={styles.buyBtn} onClick={() => {
+                                    purchaseTokens(10);
+                                    alert('토큰 10개가 충전되었습니다.');
+                                }}>구매하기</button>
+                            </div>
+                            <div className={styles.bundleCard}>
+                                <div className={styles.bundleInfo}>
+                                    <span className={styles.bundleName}>토큰 30개 (+5개)</span>
+                                    <span className={styles.bundlePrice}>₩3,300</span>
+                                </div>
+                                <button className={styles.buyBtn} onClick={() => {
+                                    purchaseTokens(35);
+                                    alert('토큰 35개가 충전되었습니다.');
+                                }}>구매하기</button>
+                            </div>
+                            <div className={styles.bundleCard}>
+                                <div className={styles.bundleInfo}>
+                                    <span className={styles.bundleName}>토큰 100개 (대용량)</span>
+                                    <span className={styles.bundlePrice}>₩7,700</span>
+                                </div>
+                                <button className={styles.buyBtn} onClick={() => {
+                                    purchaseTokens(100);
+                                    alert('토큰 100개가 충전되었습니다.');
+                                }}>구매하기</button>
+                            </div>
                         </div>
                     </div>
                 </div>

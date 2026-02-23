@@ -77,9 +77,6 @@
 }
 
 /* Day States */
-.day.active {
-    /* Legacy support if needed, but 'today' is preferred */
-}
 
 .day.today {
     background-color: #E8F5E9;
@@ -213,4 +210,94 @@
 
 .saturday {
     color: #2D9CDB;
+}
+
+/* Notification Section */
+.notiSection {
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #E5E7EB;
+    position: relative;
+}
+
+.notiHeader {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.notificationList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notificationItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #F9FAFB;
+    padding: 1rem;
+    border-radius: 16px;
+}
+
+.notiInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.notiLabel {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.notiDesc {
+    font-size: 0.8rem;
+    color: #6B7280;
+}
+
+/* Toggle Switch */
+.toggle {
+    width: 48px;
+    height: 26px;
+    background-color: #E5E7EB;
+    border-radius: 13px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+}
+
+.toggle.active {
+    background-color: var(--primary-green);
+}
+
+.slider {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.3s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggle.active .slider {
+    transform: translateX(22px);
+}
+
+.premiumBadgeCal {
+    position: absolute;
+    top: 1.5rem;
+    right: 0;
+    background-color: #FEF3C7;
+    color: #92400E;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
 }

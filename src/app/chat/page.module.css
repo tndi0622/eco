@@ -402,6 +402,156 @@
     background-color: #E8F5E9 !important;
 }
 
-.feedbackBtn.activeFeedback svg {
-    animation: bounce 0.6s ease-in-out;
+.tokenStatus {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background-color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 10;
+    border: 1px solid #f0f0f0;
+}
+
+.tokenIcon {
+    color: #FACC15;
+    /* Yellow/Gold */
+}
+
+/* Token Modal */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+    backdrop-filter: blur(4px);
+    padding: 1.5rem;
+}
+
+.tokenModal {
+    background: white;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 340px;
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: modalUp 0.3s ease-out;
+}
+
+@keyframes modalUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modalIcon {
+    font-size: 3rem;
+}
+
+.modalTitle {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: #222;
+}
+
+.modalDesc {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.rechargeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.rechargeBtn {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #E0E0E0;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+    color: #333;
+    transition: all 0.2s;
+}
+
+.rechargeBtn:hover {
+    border-color: var(--primary-green);
+    background-color: #F0F9F4;
+}
+
+.rechargeLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rechargeValue {
+    font-size: 0.85rem;
+    color: var(--primary-green);
+}
+
+.rewardBtn {
+    background-color: var(--primary-green) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.closeModal {
+    color: #999;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.adLoading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

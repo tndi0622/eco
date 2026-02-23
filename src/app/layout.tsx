@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { ChatProvider } from '@/context/ChatContext';
 import { LocationProvider } from '@/context/LocationContext';
+import { UserProvider } from '@/context/UserContext';
 
 
 import NotificationManager from '@/components/NotificationManager';
@@ -30,12 +31,14 @@ export default function RootLayout({
     <html lang="ko">
       <body className={notoSansKr.className}>
         <LocationProvider>
-          <ChatProvider>
-            <NotificationManager />
-            <Header />
-            <main>{children}</main>
-            <BottomNav />
-          </ChatProvider>
+          <UserProvider>
+            <ChatProvider>
+              <NotificationManager />
+              <Header />
+              <main>{children}</main>
+              <BottomNav />
+            </ChatProvider>
+          </UserProvider>
         </LocationProvider>
       </body>
     </html>
