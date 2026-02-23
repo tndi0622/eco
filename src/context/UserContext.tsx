@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -29,6 +29,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
     const [adTokensToday, setAdTokensToday] = useState<number>(0);
     const [loading, setLoading] = useState(true);
+    const lastFetchedId = useRef<string | null>(null);
 
     useEffect(() => {
         if (!supabase) {
@@ -37,26 +38,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
             return;
         }
 
-        const initAuth = async () => {
-            const { data: { session } } = await supabase!.auth.getSession();
+        // onAuthStateChange handles both initial session and subsequent changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             handleUserChange(session?.user ?? null);
             setLoading(false);
-        };
-
-        initAuth();
-
-        const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
-            handleUserChange(session?.user ?? null);
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
     const handleUserChange = (newUser: User | null) => {
+        // Only fetch if user actually changed or was previously null
+        if (newUser?.id === lastFetchedId.current && newUser !== null) return;
+
         setUser(newUser);
         if (newUser) {
+            lastFetchedId.current = newUser.id;
             fetchProfile(newUser.id);
         } else {
+            lastFetchedId.current = null;
             loadLocalData();
             setIsAdmin(false);
             setIsSubscribed(false);
@@ -78,7 +78,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
 
         if (data) {
-            console.log("Fetched User Profile:", data); // 디버깅용 로그
             setTokens(data.tokens);
             // 관리자 여부 및 구독 상태 업데이트
             const isManager = data.is_admin === true;

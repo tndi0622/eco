@@ -168,7 +168,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                             `/api/geocoding/reverse?lat=${latitude}&lon=${longitude}`
                         );
                         const data = await res.json();
-                        console.log("Geocoding Raw Data:", data);
 
                         if (data.error) {
                             throw new Error(data.error);
