@@ -235,9 +235,7 @@
     transform: scale(1.05);
 }
 
-.sendBtn svg {
-    /* Removed margin-left for better centering */
-}
+
 
 /* New Plus Button & Menu Styles */
 .plusBtn {
