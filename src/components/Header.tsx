@@ -59,7 +59,10 @@ export default function Header() {
           </svg>
         </div>
 
-
+        <div className={styles.tokenBadge} onClick={() => router.push('/settings')}>
+          <span>💎</span>
+          <span>{user && (user as any).isSubscribed ? '무제한' : `${(user as any).tokens || 0}개`}</span>
+        </div>
       </header>
 
       {showDetails && (

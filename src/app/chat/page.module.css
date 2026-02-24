@@ -440,27 +440,6 @@
     background-color: #E8F5E9 !important;
 }
 
-.tokenStatus {
-    position: absolute;
-    top: 1rem;
-    right: 1.5rem;
-    background-color: white;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    z-index: 10;
-    border: 1px solid #f0f0f0;
-}
-
-.tokenIcon {
-    color: #FACC15;
-    /* Yellow/Gold */
-}
 
 /* Token Modal */
 .modalOverlay {

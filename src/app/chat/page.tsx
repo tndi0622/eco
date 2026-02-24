@@ -429,11 +429,6 @@ function ChatContent() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.tokenStatus} onClick={() => setShowTokenModal(true)}>
-                <span className={styles.tokenIcon}>💎</span>
-                <span>{isSubscribed ? '무제한' : `${tokens}개`}</span>
-            </div>
-
             <input
                 type="file"
                 accept="image/*"

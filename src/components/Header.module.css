@@ -288,3 +288,31 @@
     cursor: pointer;
     white-space: nowrap;
 }
+
+.tokenBadge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #F8F9FA;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    border: 1px solid #E5E7EB;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    color: #4B5563;
+}
+
+.tokenBadge:hover {
+    background-color: #F0F2F4;
+    border-color: #D1D5DB;
+}
+
+@media (max-width: 360px) {
+    .tokenBadge span:last-child {
+        display: none;
+    }
+}
