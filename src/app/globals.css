@@ -22,20 +22,19 @@ html {
 
 body {
   max-width: 480px;
-  /* Standard mobile width for desktop view */
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   background-color: var(--background-white);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   overflow-x: hidden;
+  overflow-y: auto;
   font-family: var(--font-noto-sans-kr), sans-serif;
   color: var(--text-black);
 }
 
 main {
-  padding-bottom: 80px;
-  min-height: 100vh;
+  height: 100%;
 }
 
 a {

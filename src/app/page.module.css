@@ -1,15 +1,13 @@
 /* Minimal Container */
 .containerMinimal {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 2rem;
   background-color: white;
-  /* Clean white background */
-  padding-bottom: 120px;
-  /* Space for nav */
 }
 
 .contentWrapper {
