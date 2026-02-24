@@ -1,17 +1,21 @@
 .container {
     padding: 0;
-    height: calc(100vh - 80px);
-    /* Adjust for header/nav */
+    height: calc(100vh - 64px);
+    /* Header is approx 64px */
     display: flex;
     flex-direction: column;
     background-color: #F8F9FA;
+    padding-bottom: 84px;
+    /* Room for BottomNav (approx 70-80px) */
+    position: relative;
 }
 
 .messagesArea {
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
-    padding-bottom: 2rem;
+    padding-bottom: 180px;
+    /* Room for fixed inputArea + bottom nav */
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -261,8 +265,13 @@
 }
 
 .inputArea {
-    position: relative;
-    /* For absolute positioning of attach menu */
+    position: fixed;
+    bottom: max(5.2rem, calc(72px + env(safe-area-inset-bottom)));
+    /* Positioned above BottomNav */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
     background-color: white;
     padding: 1rem 1.5rem;
     border-top: 1px solid #E0E0E0;
@@ -271,9 +280,10 @@
 
 .attachMenu {
     position: absolute;
-    bottom: 80px;
-    /* Above the input bar approx */
+    bottom: 100%;
+    /* Positioned directly above inputArea */
     left: 1.5rem;
+    margin-bottom: 10px;
     background-color: white;
     border: 1px solid #E0E0E0;
     border-radius: 12px;
