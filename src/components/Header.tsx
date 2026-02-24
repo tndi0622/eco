@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext';
 
 export default function Header() {
   const { location, setLocation, detectLocation, isLoading, favorites, addFavorite, promoteFavorite } = useLocation();
-  const { user } = useUser();
+  const { user, tokens, isSubscribed } = useUser();
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
 
@@ -61,7 +61,7 @@ export default function Header() {
 
         <div className={styles.tokenBadge} onClick={() => router.push('/settings')}>
           <span>💎</span>
-          <span>{user && (user as any).isSubscribed ? '무제한' : `${(user as any).tokens || 0}개`}</span>
+          <span>{isSubscribed ? '무제한' : `${tokens}개`}</span>
         </div>
       </header>
 
