@@ -236,8 +236,7 @@
 }
 
 .sendBtn svg {
-    margin-left: 2px;
-    /* Visual centering */
+    /* Removed margin-left for better centering */
 }
 
 /* New Plus Button & Menu Styles */
@@ -473,7 +472,7 @@
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
-    height: 100%;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
@@ -492,6 +491,7 @@
     text-align: center;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 1.5rem;
     animation: modalUp 0.3s ease-out;
 }
