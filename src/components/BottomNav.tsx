@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './BottomNav.module.css';
+import { useUser } from '@/context/UserContext';
 
 const HomeIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,6 +41,10 @@ export default function BottomNav() {
 
         { name: '설정', path: '/settings', icon: <SettingsIcon /> },
     ];
+
+    const { user } = useUser();
+
+    if (!user) return null;
 
     return (
         <nav className={styles.nav}>

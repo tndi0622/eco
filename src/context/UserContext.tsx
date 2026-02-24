@@ -115,7 +115,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('adTokensToday');
         localStorage.removeItem('userCoordinates');
         localStorage.removeItem('userLocation');
-        window.location.reload();
+        window.location.href = '/';
     };
 
     const useToken = (cost: number = 1) => {

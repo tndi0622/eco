@@ -4,11 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './Header.module.css';
 import { useLocation } from '@/context/LocationContext';
+import { useUser } from '@/context/UserContext';
 
 export default function Header() {
   const { location, setLocation, detectLocation, isLoading, favorites, addFavorite, promoteFavorite } = useLocation();
+  const { user } = useUser();
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
+
+  if (!user) return null;
   const [isAddingBookmark, setIsAddingBookmark] = useState(false);
   const [bookmarkName, setBookmarkName] = useState('');
 
