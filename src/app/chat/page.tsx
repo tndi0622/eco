@@ -64,8 +64,16 @@ function ChatContent() {
 
     const { tokens, isSubscribed, isAdmin, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        // Use a small timeout to ensure DOM has updated and rendered
+        setTimeout(() => {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({
+                    behavior,
+                    block: 'end'
+                });
+            }
+        }, behavior === 'auto' ? 0 : 100);
     };
 
     // Use global state instead of local state
@@ -73,7 +81,16 @@ function ChatContent() {
     const [input, setInput] = useState('');
 
     useEffect(() => {
-        scrollToBottom();
+        if (messages.length === 0) return;
+
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage?.type === 'user') {
+            // When user sends a message, scroll immediately to it
+            scrollToBottom('auto');
+        } else {
+            // Smooth scroll for bot messages and skeleton
+            scrollToBottom('smooth');
+        }
     }, [messages, isThinking]);
 
     const MASCOT_IMAGES = [
@@ -200,15 +217,15 @@ function ChatContent() {
                     ));
                 }
 
-                // Final update with source
-                updateMessage(botMessageId, (
-                    <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
-                        <FormattedText text={fullText} />
-                        <div style={{ marginTop: '0.8rem', borderTop: '1px solid #eee', paddingTop: '0.8rem', fontSize: '0.8rem', color: '#888' }}>
-                            정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원
+                // Final update with source in the dedicated field
+                updateMessage(botMessageId, {
+                    content: (
+                        <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                            <FormattedText text={fullText} />
                         </div>
-                    </div>
-                ));
+                    ),
+                    source: '정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원'
+                });
             }
 
         } catch (error) {

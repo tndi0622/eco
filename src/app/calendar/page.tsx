@@ -336,8 +336,8 @@ export default function Calendar() {
                 </div>
 
                 <div className={styles.metaInfo}>
-                    <span>⏰ {dischargeTime}</span>
-                    <span>📍 {location.split(' ')[1] || '위치 미설정'} 기준</span>
+                    <span> {dischargeTime}</span>
+                    <span> {location.split(' ')[1] || '위치 미설정'} 기준</span>
                 </div>
 
                 <div className={styles.buttonGroup}>
