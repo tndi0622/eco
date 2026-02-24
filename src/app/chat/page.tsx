@@ -532,8 +532,8 @@ function ChatContent() {
             </div>
 
             {showTokenModal && (
-                <div className={styles.modalOverlay}>
-                    <div className={styles.tokenModal}>
+                <div className={styles.modalOverlay} onClick={() => setShowTokenModal(false)}>
+                    <div className={styles.tokenModal} onClick={(e) => e.stopPropagation()}>
                         {isAdLoading ? (
                             <div className={styles.adLoading}>
                                 <div className={styles.spinner}></div>
