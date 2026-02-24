@@ -97,7 +97,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${origin}/settings`,
+                redirectTo: `${origin}/`,
                 queryParams: {
                     prompt: 'select_account'
                 }

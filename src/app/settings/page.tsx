@@ -238,7 +238,7 @@ export default function Settings() {
                                 </div>
                             </div>
                             <button className={styles.addBtnPrimary} onClick={() => setShowAddressSearch(true)}>
-                                📍 우리 집 주소 등록하기
+                                우리 집 주소 등록하기
                             </button>
                         </div>
                     ) : (
@@ -461,7 +461,7 @@ export default function Settings() {
                                     <span className={styles.premiumTitle}>에코 프로 이용 중</span>
                                 </div>
                                 <p className={styles.premiumDesc}>
-                                    현재 모든 기능을 무제한으로 사용하고 계십니다. 감사합니다! ✨
+                                    현재 모든 기능을 무제한으로 사용하고 계십니다. 감사합니다!
                                 </p>
                                 <button className={styles.unsubscribeBtn} onClick={() => {
                                     if (confirm('구독을 취소하시겠습니까?\n취소 시 무제한 질문 및 알림 혜택이 사라집니다.')) {
@@ -476,7 +476,7 @@ export default function Settings() {
 
                         <div className={styles.freeTokenSection}>
                             <div className={styles.freeTokenInfo}>
-                                <span className={styles.freeTokenTitle}>📺 광고 보고 무료 토큰 받기</span>
+                                <span className={styles.freeTokenTitle}> 광고 보고 무료 토큰 받기</span>
                                 <span className={styles.freeTokenCount}>{adTokensToday}/3</span>
                             </div>
                             <button

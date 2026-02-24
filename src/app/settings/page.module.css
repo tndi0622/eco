@@ -881,13 +881,13 @@ input:checked+.slider:before {
 
 .freeTokenSection {
     background-color: white;
-    padding: 0.8rem 1rem;
-    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    border-radius: 18px;
     border: 1px solid #E5E7EB;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .freeTokenInfo {
