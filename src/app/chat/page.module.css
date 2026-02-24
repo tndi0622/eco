@@ -459,8 +459,10 @@
 .modalOverlay {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
+    max-width: 480px;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
     display: flex;

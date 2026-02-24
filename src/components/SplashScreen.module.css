@@ -78,8 +78,10 @@
 .splashContainer {
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100vw;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
     height: 100vh;
     z-index: 9999;
     background-color: #FFFFFF;

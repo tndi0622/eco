@@ -2,6 +2,12 @@
     position: fixed;
     bottom: 90px;
     right: 20px;
+
+    /* On desktop, keep within the focused 480px area */
+    @media (min-width: 481px) {
+        right: calc(50% - 220px);
+    }
+
     z-index: 100;
     background: none;
     border: none;

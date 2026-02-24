@@ -15,12 +15,21 @@
   margin: 0;
 }
 
-html,
+html {
+  background-color: #f7f9fa;
+  /* Desktop background */
+}
+
 body {
-  max-width: 100vw;
+  max-width: 480px;
+  /* Standard mobile width for desktop view */
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--background-white);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   overflow-x: hidden;
   font-family: var(--font-noto-sans-kr), sans-serif;
-  background-color: var(--background-white);
   color: var(--text-black);
 }
 
