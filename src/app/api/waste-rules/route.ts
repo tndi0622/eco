@@ -20,11 +20,14 @@ export async function GET(request: Request) {
         if (supabase) {
             try {
                 // Must handle URL encoding for ilike? No, supabase client handles it.
+                // Clean up sigungu for better matching (e.g., "중구청" -> "중구")
+                const cleanSigungu = sigungu.replace(/[시구군]청$/, '');
+
                 const { data, error } = await supabase
                     .from('waste_rules')
                     .select('*')
-                    .ilike('sido', `%${sido}%`)
-                    .ilike('sigungu', `%${sigungu}%`);
+                    .ilike('sido', `%${sido.substring(0, 2)}%`) // Match "대구" for "대구광역시"
+                    .ilike('sigungu', `%${cleanSigungu}%`);
 
                 if (!error && data) {
                     items = data;
@@ -38,8 +41,11 @@ export async function GET(request: Request) {
         // 2. Fallback to Local JSON
         if (items.length === 0) {
             source = 'json';
+            const cleanSigungu = sigungu.replace(/[시구군]청$/, '');
+            const cleanSido = sido.substring(0, 2);
+
             items = (wasteRules as any[]).filter((rule: any) => {
-                return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
+                return rule.sido.includes(cleanSido) && rule.sigungu.includes(cleanSigungu);
             });
         }
 
