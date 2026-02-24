@@ -254,11 +254,13 @@ export default function Home() {
       <div className={styles.loginOverlay}>
         <div className={styles.loginContent}>
           <div className={styles.loginLogo}>
-            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 11L2 11L2 6"></path>
-              <path d="M21 12a9 9 0 0 0-15.5-6.3L2 11"></path>
-              <path d="M17 13L22 13L22 18"></path>
-              <path d="M3 12a9 9 0 0 0 15.5 6.3L22 13"></path>
+            <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 6a10 10 0 0 1 10 0"></path>
+              <path d="M17 6l-3-3m3 3l-3 3"></path>
+              <path d="M21 12a10 10 0 0 1-5 9"></path>
+              <path d="M16 21l0-4m0 4l4-1"></path>
+              <path d="M3 12a10 10 0 0 1 5-9"></path>
+              <path d="M8 3l-4 1m4-1l-1 4"></path>
             </svg>
           </div>
           <h2 className={styles.loginTitle}>에코 시작하기</h2>
