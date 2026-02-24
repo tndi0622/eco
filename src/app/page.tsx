@@ -253,16 +253,7 @@ export default function Home() {
     return (
       <div className={styles.loginOverlay}>
         <div className={styles.loginContent}>
-          <div className={styles.loginLogo}>
-            <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 6a10 10 0 0 1 10 0"></path>
-              <path d="M17 6l-3-3m3 3l-3 3"></path>
-              <path d="M21 12a10 10 0 0 1-5 9"></path>
-              <path d="M16 21l0-4m0 4l4-1"></path>
-              <path d="M3 12a10 10 0 0 1 5-9"></path>
-              <path d="M8 3l-4 1m4-1l-1 4"></path>
-            </svg>
-          </div>
+          <div className={styles.loginLogo}>♻️</div>
           <h2 className={styles.loginTitle}>에코 시작하기</h2>
           <p className={styles.loginDesc}>
             우리 동네 배출 일정을 확인하고<br />
