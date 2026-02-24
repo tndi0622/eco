@@ -1,12 +1,12 @@
-/* Container */
 .container {
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    padding-bottom: 90px;
     background-color: #F9FAFB;
-    min-height: 100vh;
+    height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* Calendar Card */

@@ -414,8 +414,10 @@ input:checked+.slider:before {
 .modalOverlay {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
+    max-width: 480px;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
@@ -805,8 +807,10 @@ input:checked+.slider:before {
 .storeModalOverlay {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
+    max-width: 480px;
     height: 100%;
     background-color: #F9FAFB;
     /* Full page feel */
