@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext';
 
 export default function Settings() {
     const { location, favorites, addFavorite, removeFavorite, updateFavorite, promoteFavorite, detectLocation } = useLocation();
-    const { tokens, isSubscribed, isAdmin, subscribe, unsubscribe, purchaseTokens, user, loginWithGoogle, logout } = useUser();
+    const { tokens, isSubscribed, isAdmin, subscribe, unsubscribe, adTokensToday, addAdToken, purchaseTokens, user, loginWithGoogle, logout } = useUser();
     const [showAddressSearch, setShowAddressSearch] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
@@ -473,6 +473,27 @@ export default function Settings() {
                                 </button>
                             </div>
                         )}
+
+                        <div className={styles.freeTokenSection}>
+                            <div className={styles.freeTokenInfo}>
+                                <span className={styles.freeTokenTitle}>📺 광고 보고 무료 토큰 받기</span>
+                                <span className={styles.freeTokenCount}>{adTokensToday}/3</span>
+                            </div>
+                            <button
+                                className={styles.adBtnSmall}
+                                onClick={async () => {
+                                    if (adTokensToday >= 3) {
+                                        alert('오늘 받을 수 있는 무료 토큰을 모두 받았습니다.');
+                                        return;
+                                    }
+                                    const success = await addAdToken();
+                                    if (success) alert('토큰 1개가 지급되었습니다!');
+                                }}
+                                disabled={adTokensToday >= 3}
+                            >
+                                {adTokensToday >= 3 ? '완료' : '광고 보기'}
+                            </button>
+                        </div>
 
                         <div className={styles.storeGrid}>
                             <div className={styles.bundleCard}>

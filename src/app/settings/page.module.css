@@ -876,5 +876,60 @@ input:checked+.slider:before {
 .storeModalContent {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
+}
+
+.freeTokenSection {
+    background-color: white;
+    padding: 0.8rem 1rem;
+    border-radius: 14px;
+    border: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.freeTokenInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.freeTokenTitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4B5563;
+}
+
+.freeTokenCount {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    background: #F3F4F6;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.adBtnSmall {
+    background-color: #374151;
+    color: white;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.adBtnSmall:hover:not(:disabled) {
+    background-color: #1F2937;
+    transform: translateY(-1px);
+}
+
+.adBtnSmall:disabled {
+    background-color: #E5E7EB;
+    color: #9CA3AF;
+    cursor: not-allowed;
 }
