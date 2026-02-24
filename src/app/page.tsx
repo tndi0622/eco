@@ -353,7 +353,7 @@ export default function Home() {
             </div>
           </div>
 
-          <input type="file" accept="image/*" capture="environment" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
+          <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </section>
 
         <section className={styles.todayContext}>
