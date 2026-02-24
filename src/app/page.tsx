@@ -28,32 +28,8 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Recent Search Logic
-  const RECOMMENDED_KEYWORDS = ['깨진 유리', '아이스팩', '프라이팬', '폐의약품', '건전지'];
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
   const saveRecentSearch = (term: string) => {
-    let newHistory = [term, ...recentSearches.filter(k => k !== term)];
-    if (newHistory.length > 5) newHistory = newHistory.slice(0, 5);
-    setRecentSearches(newHistory);
-    localStorage.setItem('recentSearches', JSON.stringify(newHistory));
-  };
-
-  const deleteRecentSearch = (term: string) => {
-    const newHistory = recentSearches.filter(k => k !== term);
-    setRecentSearches(newHistory);
-    localStorage.setItem('recentSearches', JSON.stringify(newHistory));
+    // Logic removed as per user request
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,32 +303,7 @@ export default function Home() {
             </button>
           </form>
 
-          <div className={styles.recommendSection}>
-            {recentSearches.length > 0 && (
-              <div style={{ marginBottom: '1rem' }}>
-                <div className={styles.recommendTitle}>
-                  최근 검색어
-                  <span style={{ cursor: 'pointer', fontSize: '0.75rem' }} onClick={() => { localStorage.removeItem('recentSearches'); setRecentSearches([]); }}>전체삭제</span>
-                </div>
-                <div className={styles.chipContainer}>
-                  {recentSearches.map((term, idx) => (
-                    <div key={idx} className={`${styles.chip} ${styles.recent}`} onClick={() => router.push(`/chat?q=${encodeURIComponent(term)}`)}>
-                      {term}
-                      <button className={styles.chipDelete} onClick={(e) => { e.stopPropagation(); deleteRecentSearch(term); }}>×</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className={styles.recommendTitle}>추천 검색어</div>
-            <div className={styles.chipContainer}>
-              {RECOMMENDED_KEYWORDS.map((keyword, idx) => (
-                <div key={idx} className={styles.chip} onClick={() => router.push(`/chat?q=${encodeURIComponent(keyword)}`)}>
-                  {keyword}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* 검색어 섹션 제거됨 */}
 
           <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </section>
