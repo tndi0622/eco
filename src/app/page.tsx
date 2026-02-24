@@ -253,7 +253,13 @@ export default function Home() {
     return (
       <div className={styles.loginOverlay}>
         <div className={styles.loginContent}>
-          <div className={styles.loginLogo}>♻️</div>
+          <div className={styles.loginLogo}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="7 11 2 11 2 6"></polyline>
+              <path d="M2.05 11a10 10 0 0 1 19.31-4m-.36 7a10 10 0 0 1-19.31 4"></path>
+              <polyline points="17 13 22 13 22 18"></polyline>
+            </svg>
+          </div>
           <h2 className={styles.loginTitle}>에코 시작하기</h2>
           <p className={styles.loginDesc}>
             우리 동네 배출 일정을 확인하고<br />
@@ -377,7 +383,12 @@ export default function Home() {
 
       <div className={`${styles.toast} ${showToast ? styles.show : ''}`} onClick={() => router.push('/settings')}>
         <div className={styles.toastContent}>
-          <span className={styles.toastIcon}>📍</span>
+          <span className={styles.toastIcon}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </span>
           <span className={styles.toastText}>동네를 설정하면 배출요일을 알려드려요!</span>
         </div>
         <button className={styles.toastClose} onClick={(e) => { e.stopPropagation(); setShowToast(false); }}>×</button>
