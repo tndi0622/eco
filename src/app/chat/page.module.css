@@ -620,3 +620,15 @@
         transform: rotate(360deg);
     }
 }
+
+.subscribedBtn {
+    background-color: #f5f5f5 !important;
+    border-color: #e0e0e0 !important;
+    color: #999 !important;
+    cursor: default !important;
+    opacity: 0.8;
+}
+
+.subscribedBtn .rechargeValue {
+    color: #999 !important;
+}
