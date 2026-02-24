@@ -15,6 +15,7 @@ interface UserContextType {
     addAdToken: () => Promise<boolean>;
     purchaseTokens: (count: number) => Promise<void>;
     subscribe: () => Promise<void>;
+    unsubscribe: () => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     logout: () => Promise<void>;
 }
@@ -38,7 +39,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             return;
         }
 
-        // onAuthStateChange handles both initial session and subsequent changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             handleUserChange(session?.user ?? null);
             setLoading(false);
@@ -48,7 +48,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const handleUserChange = (newUser: User | null) => {
-        // Only fetch if user actually changed or was previously null
         if (newUser?.id === lastFetchedId.current && newUser !== null) return;
 
         setUser(newUser);
@@ -79,7 +78,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         if (data) {
             setTokens(data.tokens);
-            // 관리자 여부 및 구독 상태 업데이트
             const isManager = data.is_admin === true;
             setIsAdmin(isManager);
             setIsSubscribed(isManager || data.is_subscribed === true);
@@ -95,10 +93,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const loginWithGoogle = async () => {
         if (!supabase) return;
-
-        // 현재 사이트가 로컬인지 실서버인지에 따라 리다이렉트 URL 결정
         const origin = window.location.origin;
-
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -116,11 +111,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setTokens(1);
         setIsSubscribed(false);
         setIsAdmin(false);
-        // Do not clear everything, only user-specific persistent data
         localStorage.removeItem('userTokens');
         localStorage.removeItem('adTokensToday');
         localStorage.removeItem('userCoordinates');
-        // Keep favorites if you want them to persist locally, or clear if they are strictly user-bound
         localStorage.removeItem('userLocation');
         window.location.reload();
     };
@@ -174,6 +167,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const unsubscribe = async () => {
+        setIsSubscribed(false);
+        if (user && supabase) {
+            await supabase.from('profiles').update({ is_subscribed: false }).eq('id', user.id);
+        }
+    };
+
     return (
         <UserContext.Provider value={{
             user,
@@ -186,6 +186,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             addAdToken,
             purchaseTokens,
             subscribe,
+            unsubscribe,
             loginWithGoogle,
             logout
         }}>

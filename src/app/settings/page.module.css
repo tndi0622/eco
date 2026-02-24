@@ -688,6 +688,25 @@ input:checked+.slider:before {
     font-size: 1rem;
 }
 
+.unsubscribeBtn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    transition: all 0.2s;
+}
+
+.unsubscribeBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
 .userStatus {
     background-color: white;
     padding: 1.2rem;

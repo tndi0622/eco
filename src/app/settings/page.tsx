@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext';
 
 export default function Settings() {
     const { location, favorites, addFavorite, removeFavorite, updateFavorite, promoteFavorite, detectLocation } = useLocation();
-    const { tokens, isSubscribed, isAdmin, subscribe, purchaseTokens, user, loginWithGoogle, logout } = useUser();
+    const { tokens, isSubscribed, isAdmin, subscribe, unsubscribe, purchaseTokens, user, loginWithGoogle, logout } = useUser();
     const [showAddressSearch, setShowAddressSearch] = useState(false);
     const [showNameModal, setShowNameModal] = useState(false);
     const [pendingAddress, setPendingAddress] = useState('');
@@ -436,7 +436,7 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        {!isSubscribed && (
+                        {!isSubscribed ? (
                             <div className={styles.premiumCard}>
                                 <div className={styles.premiumHeader}>
                                     <span className={styles.premiumBadge}>Premium</span>
@@ -452,6 +452,24 @@ export default function Settings() {
                                     }
                                 }}>
                                     월 2,900원에 시작하기
+                                </button>
+                            </div>
+                        ) : !isAdmin && (
+                            <div className={styles.premiumCard}>
+                                <div className={styles.premiumHeader}>
+                                    <span className={styles.premiumBadge}>Premium</span>
+                                    <span className={styles.premiumTitle}>에코 프로 이용 중</span>
+                                </div>
+                                <p className={styles.premiumDesc}>
+                                    현재 모든 기능을 무제한으로 사용하고 계십니다. 감사합니다! ✨
+                                </p>
+                                <button className={styles.unsubscribeBtn} onClick={() => {
+                                    if (confirm('구독을 취소하시겠습니까?\n취소 시 무제한 질문 및 알림 혜택이 사라집니다.')) {
+                                        unsubscribe();
+                                        alert('구독이 취소되었습니다.');
+                                    }
+                                }}>
+                                    구독 취소하기
                                 </button>
                             </div>
                         )}
