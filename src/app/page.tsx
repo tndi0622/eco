@@ -10,6 +10,7 @@ import { useUser } from '@/context/UserContext';
 
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false });
 const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false });
+import AdBanner from '@/components/AdBanner';
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState<boolean | null>(null);
@@ -372,6 +373,12 @@ export default function Home() {
               {todayRecycleStatus.items && <div style={{ fontSize: '0.8rem', color: '#999' }}>{todayRecycleStatus.items}</div>}
             </div>
           )}
+        </section>
+
+        {/* 광고 섹션 예시 (실제 슬롯 ID가 생기면 dataAdSlot을 수정해 주세요) */}
+        <section style={{ marginTop: '30px' }}>
+          <div style={{ fontSize: '0.7rem', color: '#ccc', textAlign: 'center', marginBottom: '4px' }}>ADVERTISEMENT</div>
+          <AdBanner dataAdSlot="YOUR_AD_SLOT_ID" />
         </section>
       </div>
 

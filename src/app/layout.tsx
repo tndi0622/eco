@@ -9,6 +9,7 @@ import { UserProvider } from '@/context/UserContext';
 
 
 import NotificationManager from '@/components/NotificationManager';
+import Script from 'next/script';
 
 const notoSansKr = Noto_Sans_KR({
   weight: ['300', '400', '500', '700'], // Optimized weights
@@ -29,6 +30,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9850273886039921"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={notoSansKr.className}>
         <LocationProvider>
           <UserProvider>
