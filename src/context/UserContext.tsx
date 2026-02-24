@@ -124,7 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             const nextTokens = tokens - cost;
             setTokens(nextTokens);
             if (user && supabase) {
-                supabase.from('profiles').update({ tokens: nextTokens }).eq('id', user.id).then();
+                supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens }).then();
             } else {
                 localStorage.setItem('userTokens', nextTokens.toString());
             }
@@ -142,7 +142,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setAdTokensToday(nextAdToday);
 
         if (user && supabase) {
-            await supabase.from('profiles').update({ tokens: nextTokens }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens }).eq('id', user.id);
         } else {
             localStorage.setItem('userTokens', nextTokens.toString());
             localStorage.setItem('adTokensToday', nextAdToday.toString());
@@ -154,7 +154,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const nextTokens = tokens + count;
         setTokens(nextTokens);
         if (user && supabase) {
-            await supabase.from('profiles').update({ tokens: nextTokens }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens });
         } else {
             localStorage.setItem('userTokens', nextTokens.toString());
         }
@@ -163,14 +163,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const subscribe = async () => {
         setIsSubscribed(true);
         if (user && supabase) {
-            await supabase.from('profiles').update({ is_subscribed: true }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ id: user.id, is_subscribed: true });
         }
     };
 
     const unsubscribe = async () => {
         setIsSubscribed(false);
         if (user && supabase) {
-            await supabase.from('profiles').update({ is_subscribed: false }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ id: user.id, is_subscribed: false });
         }
     };
 
