@@ -6,8 +6,7 @@ import BottomNav from '@/components/BottomNav';
 import { ChatProvider } from '@/context/ChatContext';
 import { LocationProvider } from '@/context/LocationContext';
 import { UserProvider } from '@/context/UserContext';
-
-
+import NotificationManager from '@/components/NotificationManager';
 import Script from 'next/script';
 
 const notoSansKr = Noto_Sans_KR({
@@ -41,7 +40,7 @@ export default function RootLayout({
         <LocationProvider>
           <UserProvider>
             <ChatProvider>
-
+              <NotificationManager />
               <Header />
               <main>{children}</main>
               <BottomNav />
