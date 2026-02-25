@@ -52,12 +52,6 @@ export default function Home() {
     e.target.value = '';
   };
 
-  const [todayRecycleStatus, setTodayRecycleStatus] = useState<{
-    status: 'loading' | 'success' | 'error' | 'empty';
-    message: string;
-    items?: string;
-    time?: string;
-  }>({ status: 'loading', message: '정보를 불러오는 중...' });
 
   useEffect(() => {
     // 스플래시 상태 확인 (탭을 열 때마다 보이지 않도록 localStorage 사용)
@@ -90,97 +84,6 @@ export default function Home() {
     setSearchPlaceholder('배출 방법이 궁금한 물품을 입력해 주세요');
   }, []);
 
-  // 위치 기반 오늘 재활용 정보 가져오기
-  useEffect(() => {
-    const fetchTodayRecycleInfo = async () => {
-      if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '위치를 설정하면 알려드려요'
-        });
-        return;
-      }
-
-      const parts = location.split(' ');
-      const sido = parts[0];
-      const sigungu = parts[1];
-      const dong = parts[2];
-
-      if (!sido || !sigungu) {
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '위치 정보가 불확실해요'
-        });
-        return;
-      }
-
-      try {
-        setTodayRecycleStatus({ status: 'loading', message: '정보 확인 중...' });
-
-        const query = `/api/waste-rules?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}&dong=${encodeURIComponent(dong || '')}`;
-        const res = await fetch(query);
-
-        if (!res.ok) throw new Error('Network response was not ok');
-
-        const data = await res.json();
-
-        if (data.rules && data.rules.length > 0) {
-          const todayChar = new Date().toLocaleDateString('ko-KR', { weekday: 'short' });
-
-          let todayItems: string[] = [];
-          let timeInfo = '';
-
-          data.rules.forEach((rule: any) => {
-            const isToday = (dayStr: string) => dayStr && (dayStr.includes(todayChar) || dayStr.includes('매일'));
-
-            if (isToday(rule.gnrlWsteDschrgDay)) {
-              todayItems.push('일반쓰레기');
-              if (!timeInfo && rule.gnrlWsteDschrgTime) timeInfo = rule.gnrlWsteDschrgTime;
-            }
-            if (isToday(rule.foodWsteDschrgDay)) {
-              todayItems.push('음식물');
-              if (!timeInfo && rule.foodWsteDschrgTime) timeInfo = rule.foodWsteDschrgTime;
-            }
-            if (isToday(rule.recycleDschrgDay)) {
-              todayItems.push('재활용');
-              if (!timeInfo && rule.recycleDschrgTime) timeInfo = rule.recycleDschrgTime;
-            }
-          });
-
-          todayItems = [...new Set(todayItems)];
-
-          if (todayItems.length > 0) {
-            setTodayRecycleStatus({
-              status: 'success',
-              message: '오늘 배출 가능',
-              items: todayItems.join(', '),
-              time: timeInfo ? timeInfo.replace('~', ' ~ ') : '18:00 ~ 24:00'
-            });
-          } else {
-            setTodayRecycleStatus({
-              status: 'empty',
-              message: '오늘은 배출일이 아닙니다'
-            });
-          }
-        } else {
-          setTodayRecycleStatus({
-            status: 'error',
-            message: '관할 구청 데이터 없음',
-            items: '기본 정보 참고',
-            time: '18:00 ~ 24:00'
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch waste rules", error);
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '정보를 불러올 수 없어요'
-        });
-      }
-    };
-
-    fetchTodayRecycleInfo();
-  }, [location]);
 
   // 위치 알림 및 토스트 로직
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
@@ -306,23 +209,6 @@ export default function Home() {
           <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </section>
 
-        <section className={styles.todayContext}>
-          <div className={styles.contextLabel}>오늘의 배출</div>
-          {todayRecycleStatus.status === 'loading' && <div className={styles.contextValue} style={{ color: '#999' }}>정보를 불러오는 중...</div>}
-          {todayRecycleStatus.status === 'success' && (
-            <>
-              <div className={styles.contextValue}>{todayRecycleStatus.items}</div>
-              <div className={styles.contextTime}>{todayRecycleStatus.time}</div>
-            </>
-          )}
-          {todayRecycleStatus.status === 'empty' && <div className={styles.contextValue} style={{ color: '#666' }}>{todayRecycleStatus.message}</div>}
-          {todayRecycleStatus.status === 'error' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div className={styles.contextValue} style={{ color: '#FF5252' }}>{todayRecycleStatus.message}</div>
-              {todayRecycleStatus.items && <div style={{ fontSize: '0.8rem', color: '#999' }}>{todayRecycleStatus.items}</div>}
-            </div>
-          )}
-        </section>
 
         {/* 광고 섹션 예시 (실제 슬롯 ID가 생기면 dataAdSlot을 수정해 주세요) */}
         <section style={{ marginTop: '30px' }}>

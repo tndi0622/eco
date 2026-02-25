@@ -36,7 +36,13 @@ export default function Settings() {
     const [notificationSettings, setNotificationSettings] = useState({
         general: false,
         recycle: false,
-        food: false
+        food: false,
+        generalTime: '19:00',
+        recycleTime: '19:00',
+        foodTime: '19:00',
+        generalDays: [] as number[], // 0: Sun, 1: Mon, ...
+        recycleDays: [] as number[],
+        foodDays: [] as number[]
     });
 
     const [wasteScheduler, setWasteScheduler] = useState({
@@ -55,6 +61,24 @@ export default function Settings() {
 
     const handleToggleNotification = (key: 'general' | 'recycle' | 'food') => {
         const newSettings = { ...notificationSettings, [key]: !notificationSettings[key] };
+        setNotificationSettings(newSettings);
+        localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+    };
+
+    const handleTimeChange = (key: 'general' | 'recycle' | 'food', time: string) => {
+        const newSettings = { ...notificationSettings, [`${key}Time`]: time };
+        setNotificationSettings(newSettings);
+        localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+    };
+
+    const handleDayToggle = (key: 'general' | 'recycle' | 'food', day: number) => {
+        const dayKey = `${key}Days` as 'generalDays' | 'recycleDays' | 'foodDays';
+        const currentDays = notificationSettings[dayKey];
+        const newDays = currentDays.includes(day)
+            ? currentDays.filter(d => d !== day)
+            : [...currentDays, day].sort();
+
+        const newSettings = { ...notificationSettings, [dayKey]: newDays };
         setNotificationSettings(newSettings);
         localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
     };
@@ -317,6 +341,59 @@ export default function Settings() {
                 </div>
             </section>
 
+            {/* Notification Settings Section */}
+            <section className={styles.section}>
+                <div className={styles.header}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    알림 설정
+                </div>
+                <div className={styles.notificationList}>
+                    {[
+                        { key: 'general', label: '일반 쓰레기', timeKey: 'generalTime', daysKey: 'generalDays' },
+                        { key: 'recycle', label: '재활용 쓰레기', timeKey: 'recycleTime', daysKey: 'recycleDays' },
+                        { key: 'food', label: '음식물 쓰레기', timeKey: 'foodTime', daysKey: 'foodDays' }
+                    ].map((item) => (
+                        <div key={item.key} className={styles.notificationItem} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                                <div className={styles.notiLabel}>{item.label}</div>
+                                <Toggle
+                                    active={(notificationSettings as any)[item.key]}
+                                    onClick={() => handleToggleNotification(item.key as any)}
+                                />
+                            </div>
+
+                            <div className={styles.notiConfig}>
+                                <div className={styles.daySelection}>
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
+                                        <button
+                                            key={idx}
+                                            className={`${styles.dayBtn} ${(notificationSettings as any)[item.daysKey].includes(idx) ? styles.dayBtnActive : ''}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDayToggle(item.key as any, idx);
+                                            }}
+                                        >
+                                            {day}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className={styles.timeSetting}>
+                                    <span className={styles.timeLabel}>알림 시간</span>
+                                    <input
+                                        type="time"
+                                        className={styles.timeInput}
+                                        value={(notificationSettings as any)[item.timeKey] || '19:00'}
+                                        onChange={(e) => handleTimeChange(item.key as any, e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
 
 
             {/* Store & Membership Section - Compact Entry */}

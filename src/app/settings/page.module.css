@@ -344,15 +344,67 @@
     gap: 0.5rem;
 }
 
-.notiDesc {
+.notiConfig {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.daySelection {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.3rem;
+}
+
+.dayBtn {
+    flex: 1;
+    padding: 0.5rem 0;
+    border: 1px solid #E0E0E0;
+    background: white;
+    border-radius: 8px;
     font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
     color: #666;
-    line-height: 1.4;
+    transition: all 0.2s;
+}
+
+.dayBtnActive {
+    background-color: var(--primary-green);
+    color: white;
+    border-color: var(--primary-green);
+}
+
+.timeSetting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     background: #F8F9FA;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+}
+
+.timeLabel {
+    font-size: 0.85rem;
+    color: #444;
+    font-weight: 600;
+}
+
+.timeInput {
+    border: 1px solid #ddd;
+    border-radius: 8px;
     padding: 4px 8px;
-    border-radius: 6px;
-    display: inline-block;
-    align-self: flex-start;
+    font-size: 0.9rem;
+    color: #333;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    background-color: white;
+}
+
+.timeInput:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.1);
 }
 
 /* Toggle Switch */
