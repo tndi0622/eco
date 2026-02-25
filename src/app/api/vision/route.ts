@@ -40,8 +40,11 @@ export async function POST(request: Request) {
         // --- 1단계: 아이템 식별 ---
         const identificationPrompt = `
             Analyze this image and identify the main waste item.
-            Return ONLY the single specific name of the item in Korean (e.g., "소파", "침대", "건전지", "투명페트병").
-            Do not add any other text or punctuation.
+            1. Item Name: A descriptive name (e.g., "3인용 가죽 소파").
+            2. Search Keyword: A simple base keyword for database lookup (e.g., "소파").
+            
+            Return ONLY in JSON format:
+            {"itemName": "...", "searchKeyword": "..."}
         `;
 
         const imagePart = {
@@ -52,8 +55,18 @@ export async function POST(request: Request) {
         };
 
         const idResult = await model.generateContent([identificationPrompt, imagePart]);
-        const identifiedItem = idResult.response.text().trim();
-        query = identifiedItem;
+        let idJson;
+        try {
+            const idText = idResult.response.text().trim().replace(/```json|```/g, '');
+            idJson = JSON.parse(idText);
+        } catch (e) {
+            // JSON 파싱 실패 시 텍스트 기반 폴백
+            const text = idResult.response.text().trim();
+            idJson = { itemName: text, searchKeyword: text.split(' ')[0] };
+        }
+
+        const itemName = idJson.itemName;
+        query = idJson.searchKeyword; // 검색용 키워드로 공공데이터 조회
 
         // --- 2단계: 공공데이터 가져오기 ---
         const fetchWithTimeout = async (url: string, ms: number = 2500) => {
@@ -121,28 +134,27 @@ export async function POST(request: Request) {
         }
 
         // --- 3단계: 최종 답변 ---
-        const largeWasteContext = largeWasteItems.map(item => `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`).join('\n');
-        const ruleContext = wasteInfoItems.slice(0, 3).map(item => `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`).join('\n');
+        const largeWasteContext = largeWasteItems.slice(0, 15).map(item => `- [대형폐기물 수수료] 품목: ${item.larWasNm}, 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원`).join('\n');
+        const ruleContext = wasteInfoItems.slice(0, 2).map(item => `- [배출규칙] 생활쓰레기: ${item.gnrlWsteDschrgMthd}, 재활용: ${item.recycleDschrgMthd}`).join('\n');
 
         const finalPrompt = `
             당신은 친절한 환경 마스코트 '에코'이며, **대형 폐기물 처리 전문가**입니다.
-            사용자가 사진으로 업로드한 품목에 대한 올바른 처리 방법을 안내해 주세요.
+            사용자가 사진으로 업로드한 품목을 분석한 결과는 다음과 같습니다:
+            - 식별된 항목: **${itemName}**
+            - 검색 키워드: ${query}
             
-            [1. 공공데이터: 규격별 수수료 내역]
-            ${largeWasteContext || "관련 수수료 데이터가 직접적으로 없습니다. 유사 품목을 참고하세요."}
+            [1. 우리 지역 공공데이터: 규격 및 수수료 내역]
+            ${largeWasteContext || "제공된 데이터가 없습니다. 일반적인 수수료 범위를 안내하세요."}
 
-            [2. 로컬데이터: 우리 동네 배출 규칙]
-            ${ruleContext || "지역 배출 규칙 데이터 없음"}
+            [2. 지역 배출 규칙]
+            ${ruleContext || "지자체 홈페이지를 확인하세요."}
             
-            [지시사항]
-            1. 당신의 주요 임무는 사진 속 **대형 폐기물(가구, 가전 등)을 식별하고 정확한 수수료와 처리 절차를 안내**하는 것입니다.
-            2. 식별된 품목이 무엇인지 언급하고, 사진상으로 보이는 **대략적인 크기를 [1. 수수료 내역]의 규격과 대조**하여 안내하세요.
-            3. **규격별 수수료:** 가능한 모든 규격별 수수료(예: 1인용 5,000원, 2인용 10,000원 등)를 정확히 나열하세요.
-            4. **스티커 구매처:** 어디서 스티커를 살 수 있는지(관할 지자체 홈페이지, 행정복지센터, 편의점, 마트 등) 구체적으로 명시하세요.
-            5. **상세 배출 단계:** 
-               - 신청/결제 -> 스티커 부착 -> 지정 장소(집 앞 등) 배출 과정을 순서대로 설명하세요.
-            6. 가전제품인 경우 '폐가전 무상방문수거(1599-0903)'를 반드시 포함하세요.
-            7. 답변은 **8문장 이내**로 명확하게 구성하고, 출처를 마지막에 꼭 명시하세요. 😊
+            [지시사항 - 반드시 지킬 것]
+            1. **수수료 리스트 필수 출력**: [1. 공공데이터]에 있는 **모든 규격과 가격(원)**을 하나도 빠짐없이 목록 형태로 정확히 나열하세요.
+            2. **맞춤 안내**: 사진 속 물건의 크기가 데이터의 어떤 규격에 해당하는지 판단하여 추천 가격을 알려주세요.
+            3. **배출 절차**: 스티커 구매처와 배출 과정(신청->부착->지정장소 배출)을 명확히 안내하세요.
+            4. **무상 수거**: 가전제품인 경우 '폐가전 무상방문수거(1599-0903)'를 반드시 포함하세요.
+            5. **답변 스타일**: 수수료 정보가 가장 눈에 띄게 구성하고, 친절한 말투를 유지하며 8문장 내외로 작성하세요. 😊
             
             "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"
         `;
