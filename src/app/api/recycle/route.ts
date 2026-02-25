@@ -201,7 +201,7 @@ export async function GET(request: Request) {
 
     // 2. Gemini 사용
     if (geminiKey) {
-        const availableModels = ["gemini-2.0-flash", "gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+        const availableModels = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
         let result: any = null;
         let lastError: any = null;
