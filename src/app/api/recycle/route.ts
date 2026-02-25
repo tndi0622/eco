@@ -106,7 +106,7 @@ export async function GET(request: Request) {
         // Gemini 사용
         if (geminiKey) {
             const genAI = new GoogleGenerativeAI(geminiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
