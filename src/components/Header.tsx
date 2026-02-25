@@ -14,9 +14,10 @@ export default function Header() {
   const [showDetails, setShowDetails] = useState(false);
   const [showStoreModal, setShowStoreModal] = useState(false);
 
-  if (!user) return null;
   const [isAddingBookmark, setIsAddingBookmark] = useState(false);
   const [bookmarkName, setBookmarkName] = useState('');
+
+  if (!user) return null;
 
   const handleLocationClick = () => {
     setShowDetails(true);
