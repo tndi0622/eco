@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     try {
         const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         // --- 1단계: 아이템 식별 ---
         const identificationPrompt = `
@@ -85,13 +85,7 @@ export async function POST(request: Request) {
             return [];
         };
 
-        const fetchPublicData = async () => {
-            try {
-                const url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
-                const data = await fetchWithTimeout(url);
-                return getItems(data);
-            } catch (e) { return []; }
-        };
+        // 일반 재활용 정보 가져오기 로직 제거됨
 
         const fetchLargeWasteData = async () => {
             try {
@@ -133,19 +127,12 @@ export async function POST(request: Request) {
             } catch (e) { return []; }
         };
 
-        const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
-            fetchPublicData(),
-            fetchCollectionData(),
-            fetchLargeWasteData(),
-            fetchWasteBagData(),
-            fetchFoodWasteData()
+        // 대형 폐기물 데이터만 병렬로 실행
+        const [largeWasteResult] = await Promise.allSettled([
+            fetchLargeWasteData()
         ]);
 
-        let publicDataItems: any[] = publicDataResult.status === 'fulfilled' ? publicDataResult.value : [];
-        let collectionPointItems: any[] = collectionDataResult.status === 'fulfilled' ? collectionDataResult.value : [];
         let largeWasteItems: any[] = largeWasteResult.status === 'fulfilled' ? largeWasteResult.value : [];
-        let wasteBagItems: any[] = wasteBagResult.status === 'fulfilled' ? wasteBagResult.value : [];
-        let foodWasteItems: any[] = foodWasteResult.status === 'fulfilled' ? foodWasteResult.value : [];
         let wasteInfoItems: any[] = [];
 
         // 로컬 데이터 (Supabase/JSON)
@@ -176,49 +163,46 @@ export async function POST(request: Request) {
 
         // --- 3단계: 최종 답변 ---
         // 컨텍스트 구축
-        const methodContext = publicDataItems.map(item => `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`).join('\n');
         const largeWasteContext = largeWasteItems.map(item => `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`).join('\n');
-        const wasteBagContext = wasteBagItems.map(item => `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`).join('\n');
-        const foodWasteContext = foodWasteItems.map(item => `- [음식물납부필증] 지역: ${item.ctpvNm} ${item.sggNm}, 유형: ${item.foodTrashPayCertTypeNm}, 대상: ${item.useTrgtNm}, 용량: ${item.foodTrashCpcty}, 가격: ${item.price}원`).join('\n');
-        const placeContext = collectionPointItems.map(item => `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`).join('\n');
         const ruleContext = wasteInfoItems.slice(0, 3).map(item => `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`).join('\n');
 
         const finalPrompt = `
-            당신은 친절한 환경 마스코트 '에코'입니다.
+            당신은 친절한 환경 마스코트 '에코'이며, **대형 폐기물 처리 전문가**입니다.
             사용자가 사진으로 업로드한 **"${query}"**에 대한 올바른 처리 방법을 안내해 주세요.
             
-            [사용자 정보]
-            - 위치: ${location || "알 수 없음"} (${sido} ${sigungu})
-            - 물건: ${query}
+            [1. 공공데이터: 규격별 수수료 내역]
+            ${largeWasteContext || "관련 수수료 데이터가 직접적으로 없습니다. 유사 품목을 참고하세요."}
 
-            [1. 공공데이터: 분리배출 방법]
-            ${methodContext || "관련 데이터 없음"}
-
-            [2. 공공데이터: 대형폐기물 수수료 (가구/가전일 경우 필수 참고)]
-            ${largeWasteContext || "관련 데이터 없음"}
-
-            [3. 공공데이터: 종량제/음식물 가격 참고]
-            ${wasteBagContext || ""}
-            ${foodWasteContext || ""}
-
-            [4. 로컬데이터: 우리 동네 배출 규칙]
+            [2. 로컬데이터: 우리 동네 배출 규칙]
             ${ruleContext || "지역 배출 규칙 데이터 없음"}
             
-            [5. 공공데이터: 수거처 정보]
-            ${placeContext || ""}
-
             [지시사항]
-            1. 당신의 주요 임무는 사진 속 **대형 폐기물(가구, 가전 등)을 식별하고 올바른 처리 방법을 안내**하는 것입니다.
-            2. 식별된 **"${query}"**이(가) 무엇인지 짧게 언급하며 시작하세요.
-            3. 대형 폐기물일 경우 [2. 대형폐기물] 데이터를 활용하여 **정확한 수수료 비용**과 **신청 방법**을 안내하세요.
-            4. 재활용이 가능한 소형 품목이라면 가장 올바른 분리배출 요령을 1~2문장으로 요약하세요.
-            5. 답변은 **최대 5~6문장 이내**로 매우 간결하게 작성하고 결론부터 말씀하세요.
-            6. **출처 표기(필수):** 답변의 맨 마지막 줄에 "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"을 명시하세요.
-            7. 이모지는 문장 끝에만 사용해주세요.
+            1. 당신의 주요 임무는 사진 속 **대형 폐기물(가구, 가전 등)을 식별하고 정확한 수수료와 처리 절차를 안내**하는 것입니다.
+            2. 식별된 **"${query}"**이(가) 무엇인지 언급하고, 사진상으로 보이는 **대략적인 크기를 [1. 수수료 내역]의 규격과 대조**하여 안내하세요.
+            3. **규격별 수수료:** 가능한 모든 규격별 수수료(예: 1인용 5,000원, 2인용 10,000원 등)를 정확히 나열하세요.
+            4. **스티커 구매처:** 어디서 스티커를 살 수 있는지(구청 홈페이지, 주민센터, 편의점, 마트 등) 구체적으로 명시하세요.
+            5. **상세 배출 단계:** 
+               - 신청/결제 -> 스티커 부착 -> 지정 장소(집 앞 등) 배출 과정을 순서대로 설명하세요.
+            6. 가전제품인 경우 '폐가전 무상방문수거(1599-0903)'를 반드시 포함하세요.
+            7. 답변은 **8문장 이내**로 명확하게 구성하고, 출처를 마지막에 꼭 명시하세요. 😊
+            
+            "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"
         `;
 
         const finalResult = await model.generateContent([finalPrompt, imagePart]);
         const responseText = finalResult.response.text();
+
+        // Gemini 실패 시 폴백
+        if (largeWasteItems.length > 0) {
+            return NextResponse.json({
+                resultType: 'list',
+                response: {
+                    body: {
+                        items: largeWasteItems
+                    }
+                }
+            });
+        }
 
         return NextResponse.json({
             resultType: 'gemini',
@@ -228,10 +212,12 @@ export async function POST(request: Request) {
 
     } catch (e: any) {
         console.error("Vision Analysis Error:", e);
-        // 503 Service Unavailable (Overloaded) 또는 기타 Gemini 관련 에러 처리
-        const errorMessage = e.status === 503 || e.message?.includes('503')
-            ? 'AI 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
-            : '사진을 분석하는 도중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        const isQuotaExceeded = e.status === 429 || e.message?.includes('429') || e.message?.includes('quota');
+        const errorMessage = isQuotaExceeded
+            ? '오늘의 AI 사용량이 초과되었습니다. 잠시 후 다시 시도하거나 나중에 이용해 주세요.'
+            : (e.status === 503 || e.message?.includes('503'))
+                ? 'AI 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
+                : '사진을 분석하는 도중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+        return NextResponse.json({ error: errorMessage }, { status: e.status || 500 });
     }
 }
