@@ -53,8 +53,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             }
         } else if (step === 2) {
             // Final Step
-            // Enable notifications by default for new users
-            const defaultSettings = { general: true, recycle: true, food: true };
+            // Disable notifications by default for new users
+            const defaultSettings = { general: false, recycle: false, food: false };
             localStorage.setItem('notificationSettings', JSON.stringify(defaultSettings));
             onComplete();
         } else {

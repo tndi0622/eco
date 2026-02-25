@@ -121,18 +121,61 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
 
         if (data) {
-            setTokens(data.tokens);
+            let currentTokens = data.tokens;
             const isManager = data.is_admin === true;
             setIsAdmin(isManager);
             setIsSubscribed(isManager || data.is_subscribed === true);
             setSubscriptionExpiry(data.subscription_expiry);
+
+            // Daily login token logic for authenticated users
+            const todayStr = new Date().toISOString().split('T')[0];
+            const lastLoginDate = localStorage.getItem('lastLoginDate'); // We can still use local storage to track the *session* login
+            // Or better, we could have a last_login column in DB, but for now local storage is easier.
+
+            if (lastLoginDate !== todayStr) {
+                localStorage.setItem('lastLoginDate', todayStr);
+                localStorage.setItem('adTokensToday', '0');
+                setAdTokensToday(0);
+
+                currentTokens += 1;
+                // Update DB
+                supabase.from('profiles').upsert({ id: userId, tokens: currentTokens }).then();
+            } else {
+                setAdTokensToday(parseInt(localStorage.getItem('adTokensToday') || '0'));
+            }
+
+            setTokens(currentTokens);
         }
     };
 
     const loadLocalData = () => {
         const savedTokens = localStorage.getItem('userTokens');
         if (savedTokens) setTokens(parseInt(savedTokens));
-        setAdTokensToday(parseInt(localStorage.getItem('adTokensToday') || '0'));
+
+        // Daily reset and login token logic
+        const todayStr = new Date().toISOString().split('T')[0];
+        const lastLoginDate = localStorage.getItem('lastLoginDate');
+        const savedAdTokens = localStorage.getItem('adTokensToday');
+
+        if (lastLoginDate !== todayStr) {
+            // New Day logic
+            localStorage.setItem('lastLoginDate', todayStr);
+            localStorage.setItem('adTokensToday', '0');
+            setAdTokensToday(0);
+
+            // Give 1 daily token
+            const currentTokens = savedTokens ? parseInt(savedTokens) : tokens;
+            const nextTokens = currentTokens + 1;
+            setTokens(nextTokens);
+            localStorage.setItem('userTokens', nextTokens.toString());
+
+            // This alert might be annoying on every fresh start, but user requested it as a feature
+            // Better to show a toast or something, but let's keep it simple for now if they didn't specify.
+            // Actually, let's just do it silently or with a console log for now, or even better, 
+            // since I'm implementing it in UserProvider, it will run on every refresh.
+        } else {
+            setAdTokensToday(parseInt(savedAdTokens || '0'));
+        }
     };
 
     const loginWithGoogle = async () => {

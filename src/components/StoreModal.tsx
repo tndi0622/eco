@@ -70,13 +70,8 @@ export default function StoreModal({ onClose }: StoreModalProps) {
                             <p className={styles.premiumDesc}>
                                 광고 없이 무제한 질문, 배출 요일 알림 서비스 등 모든 기능을 자유롭게 이용하세요.
                             </p>
-                            <button className={styles.subscribeBtn} onClick={async () => {
-                                if (confirm('월 2,900원에 프리미엄 멤버십을 시작하시겠습니까?')) {
-                                    await subscribe();
-                                    alert('축하합니다! 이제 에코 프로 회원입니다.');
-                                }
-                            }}>
-                                월 2,900원에 시작하기
+                            <button className={styles.subscribeBtn} disabled style={{ backgroundColor: '#ccc', cursor: 'default' }}>
+                                준비중
                             </button>
                         </div>
                     ) : !isAdmin && (
@@ -128,30 +123,21 @@ export default function StoreModal({ onClose }: StoreModalProps) {
                                 <span className={styles.bundleName}>토큰 10개</span>
                                 <span className={styles.bundlePrice}>₩1,100</span>
                             </div>
-                            <button className={styles.buyBtn} onClick={async () => {
-                                await purchaseTokens(10);
-                                alert('토큰 10개가 충전되었습니다.');
-                            }}>구매하기</button>
+                            <button className={styles.buyBtn} disabled style={{ backgroundColor: '#ccc', cursor: 'default' }}>준비중</button>
                         </div>
                         <div className={styles.bundleCard}>
                             <div className={styles.bundleInfo}>
                                 <span className={styles.bundleName}>토큰 30개 (+5개)</span>
                                 <span className={styles.bundlePrice}>₩3,300</span>
                             </div>
-                            <button className={styles.buyBtn} onClick={async () => {
-                                await purchaseTokens(35);
-                                alert('토큰 35개가 충전되었습니다.');
-                            }}>구매하기</button>
+                            <button className={styles.buyBtn} disabled style={{ backgroundColor: '#ccc', cursor: 'default' }}>준비중</button>
                         </div>
                         <div className={styles.bundleCard}>
                             <div className={styles.bundleInfo}>
                                 <span className={styles.bundleName}>토큰 100개 (대용량)</span>
                                 <span className={styles.bundlePrice}>₩7,700</span>
                             </div>
-                            <button className={styles.buyBtn} onClick={async () => {
-                                await purchaseTokens(100);
-                                alert('토큰 100개가 충전되었습니다.');
-                            }}>구매하기</button>
+                            <button className={styles.buyBtn} disabled style={{ backgroundColor: '#ccc', cursor: 'default' }}>준비중</button>
                         </div>
                     </div>
                 </div>
