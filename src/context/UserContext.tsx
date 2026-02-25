@@ -162,6 +162,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = async () => {
+        // Notify Flutter to logout as well and wait for completion
+        if (window.flutter_inappwebview) {
+            try {
+                await window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'logout');
+            } catch (e) {
+                console.error("Native logout error:", e);
+            }
+        } else if (window.FlutterLoginChannel) {
+            window.FlutterLoginChannel.postMessage('logout');
+        }
+
         if (supabase) await supabase.auth.signOut();
         setUser(null);
         setTokens(1);
