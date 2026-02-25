@@ -9,7 +9,16 @@ import { useChat } from '@/context/ChatContext';
 import { useLocation } from '@/context/LocationContext';
 import ChatSkeleton from './ChatSkeleton';
 import FormattedText from '@/components/FormattedText';
+import Image from 'next/image';
 import { useUser } from '@/context/UserContext';
+
+const MASCOT_IMAGES = [
+    '/images/eco_mascot_thinking.png',
+    '/images/eco_mascot_idea.png',
+    '/images/eco_mascot_finish.png',
+    '/images/eco_mascot_welcome.png',
+];
+
 
 function FeedbackButtons() {
     const [activeType, setActiveType] = useState<'positive' | 'negative' | null>(null);
@@ -54,8 +63,9 @@ function ChatContent() {
 
     // Bot Thinking State
     const [isThinking, setIsThinking] = useState(false);
-    const [welcomeMascot, setWelcomeMascot] = useState('/images/eco_mascot_welcome.png');
-    const [loadingMascot, setLoadingMascot] = useState('/images/eco_mascot_thinking.png');
+    const [welcomeMascot, setWelcomeMascot] = useState('');
+    const [loadingMascot, setLoadingMascot] = useState(MASCOT_IMAGES[0]);
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     // UI State for Attach Menu
     const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -92,13 +102,6 @@ function ChatContent() {
             scrollToBottom('smooth');
         }
     }, [messages, isThinking]);
-
-    const MASCOT_IMAGES = [
-        '/images/eco_mascot_thinking.png',
-        '/images/eco_mascot_idea.png',
-        '/images/eco_mascot_finish.png',
-        '/images/eco_mascot_welcome.png',
-    ];
 
     useEffect(() => {
         // Randomize welcome mascot on client mount
@@ -448,7 +451,17 @@ function ChatContent() {
                 {messages.length === 0 ? (
                     <div className={styles.emptyState}>
                         <div className={styles.mascotContainer}>
-                            <img src={welcomeMascot} alt="Welcome" className={styles.mascotImage} />
+                            {welcomeMascot && (
+                                <Image
+                                    src={welcomeMascot}
+                                    alt="Welcome"
+                                    width={120}
+                                    height={120}
+                                    className={`${styles.mascotImage} ${isImageLoaded ? styles.loaded : ''}`}
+                                    onLoad={() => setIsImageLoaded(true)}
+                                    priority
+                                />
+                            )}
                         </div>
                         <h2 className={styles.welcomeText}>무엇이든 물어봐주세요!</h2>
                         <p className={styles.costHint}>
