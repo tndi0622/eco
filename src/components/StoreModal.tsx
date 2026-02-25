@@ -107,8 +107,16 @@ export default function StoreModal({ onClose }: StoreModalProps) {
                                     alert('오늘 받을 수 있는 무료 토큰을 모두 받았습니다.');
                                     return;
                                 }
-                                const success = await addAdToken();
-                                if (success) alert('토큰 1개가 지급되었습니다!');
+
+                                // Flutter 네이티브 광고 호출
+                                if (typeof window !== 'undefined' && window.flutter_inappwebview) {
+                                    console.log('Calling native rewarded ad...');
+                                    window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'showRewardedAd');
+                                } else {
+                                    // 앱이 아닌 브라우저 환경에서는 메시지만 표시
+                                    alert('광고 기능은 모바일 앱에서만 작동합니다. (테스트 환경에서는 보상이 지급되지 않습니다)');
+                                    console.warn('Native AdMob bridge not found. This is normal in a web browser.');
+                                }
                             }}
                             disabled={adTokensToday >= 3}
                         >

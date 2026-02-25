@@ -18,10 +18,11 @@
 .storeModalSheet {
     background-color: #F9FAFB;
     width: 100%;
-    height: 92%;
+    height: auto;
+    max-height: 85vh;
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
-    padding: 0;
+    padding: 0 0 100px 0;
     /* Use individual padding for header and content */
     overflow-y: auto;
     padding-bottom: 5rem;

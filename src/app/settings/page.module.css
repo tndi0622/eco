@@ -1,11 +1,11 @@
 .container {
-    padding: 1rem;
+    padding: 1rem 1rem 100px 1rem;
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
     background-color: #F9FAFB;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow-y: auto;
 }
 
 .section {

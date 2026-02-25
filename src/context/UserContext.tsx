@@ -32,6 +32,7 @@ declare global {
         };
         handleNativeGoogleLogin?: (idToken: string, accessToken: string) => void;
         handleFcmToken?: (token: string) => void;
+        handleRewardEarned?: (amount: number, type: string) => void;
     }
 }
 
@@ -98,6 +99,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
         };
 
+        // 보상형 광고 완료 핸들러
+        window.handleRewardEarned = async (amount: number, type: string) => {
+            console.log(`Earned reward: ${amount} ${type}`);
+            const success = await addAdToken();
+            if (success) {
+                alert('광고 시청 보상으로 토큰 1개가 지급되었습니다!');
+            }
+        };
+
         // 앱이 토큰을 전달할 수 있도록 웹뷰가 준비되었음을 알림
         if (window.flutter_inappwebview) {
             window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'webViewReady');
@@ -106,6 +116,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription.unsubscribe();
             delete window.handleNativeGoogleLogin;
+            delete window.handleFcmToken;
+            delete window.handleRewardEarned;
         };
     }, []);
 
@@ -288,7 +300,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const addAdToken = async (): Promise<boolean> => {
         if (adTokensToday >= 3) return false;
-        await new Promise(resolve => setTimeout(resolve, 2000));
 
         let nextTokens = 0;
         let nextAdToday = 0;
