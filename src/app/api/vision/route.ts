@@ -12,16 +12,13 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.DATA_GO_KR_API_KEY;
     const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
-    // Public Data Service Key
-    const serviceApiKey = 'c7c9950c1f91a266a3e39644a7febeac35730f42a49c79b07e676d84e4d1bbe1';
 
-    if (!geminiKey) {
-        return NextResponse.json({ error: 'Gemini Key missing' }, { status: 500 });
+    if (!apiKey || !geminiKey) {
+        return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
     try {
         const genAI = new GoogleGenerativeAI(geminiKey);
-        // Use gemini-2.5-flash-lite as requested
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         // --- Step 1: Identify the Item ---
@@ -40,11 +37,10 @@ export async function POST(request: Request) {
 
         const idResult = await model.generateContent([identificationPrompt, imagePart]);
         const identifiedItem = idResult.response.text().trim();
-        const query = identifiedItem; // This becomes our search query
+        const query = identifiedItem;
 
         // --- Step 2: Fetch Public Data (Parallel) ---
 
-        // Helper: Parse Location
         const parseLocation = (loc: string | null) => {
             if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
             const parts = loc.split(' ');
@@ -57,7 +53,6 @@ export async function POST(request: Request) {
 
         const { sido, sigungu, dong } = parseLocation(location);
 
-        // Helper: Timeout Wrapper
         const fetchWithTimeout = async (url: string, ms: number = 2500) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), ms);
@@ -81,94 +76,63 @@ export async function POST(request: Request) {
             return false;
         };
 
-        // API Fetchers
+        const getItems = (data: any) => {
+            if (isDataEmpty(data)) return [];
+            const rawItems = data.response.body.items;
+            if (Array.isArray(rawItems)) return rawItems;
+            if (Array.isArray(rawItems?.item)) return rawItems.item;
+            if (rawItems?.item) return [rawItems.item];
+            return [];
+        };
+
         const fetchPublicData = async () => {
-            if (!apiKey) return [];
             try {
-                let apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
-                let data = await fetchWithTimeout(apiUrl);
-                if (isDataEmpty(data)) return [];
-                const rawItems = data.response.body.items;
-                if (Array.isArray(rawItems)) return rawItems;
-                else if (Array.isArray(rawItems?.item)) return rawItems.item;
-                else if (rawItems?.item) return [rawItems.item];
-                return [];
+                const url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
+                const data = await fetchWithTimeout(url);
+                return getItems(data);
             } catch (e) { return []; }
         };
 
         const fetchLargeWasteData = async () => {
-            if (!serviceApiKey) return [];
             try {
-                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_lar_was_fee_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
-                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
-                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
-                if (query) apiUrl += `&larWasNm=${encodeURIComponent(query)}`;
-                const data = await fetchWithTimeout(apiUrl);
-                if (!isDataEmpty(data)) {
-                    const rawItems = data.response.body.items;
-                    let items: any[] = [];
-                    if (Array.isArray(rawItems)) items = rawItems;
-                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
-                    else if (rawItems?.item) items = [rawItems.item];
-                    return items;
-                }
-                return [];
+                let url = `https://api.data.go.kr/openapi/tn_pubr_public_lar_was_fee_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
+                if (query) url += `&larWasNm=${encodeURIComponent(query)}`;
+                const data = await fetchWithTimeout(url);
+                return getItems(data);
             } catch (e) { return []; }
         };
 
         const fetchWasteBagData = async () => {
-            if (!serviceApiKey) return [];
             try {
-                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
-                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
-                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
-                const data = await fetchWithTimeout(apiUrl);
-                if (!isDataEmpty(data)) {
-                    const rawItems = data.response.body.items;
-                    let items: any[] = [];
-                    if (Array.isArray(rawItems)) items = rawItems;
-                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
-                    else if (rawItems?.item) items = [rawItems.item];
-                    return items;
-                }
-                return [];
+                let url = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
+                const data = await fetchWithTimeout(url);
+                return getItems(data);
             } catch (e) { return []; }
         };
 
         const fetchFoodWasteData = async () => {
-            if (!serviceApiKey) return [];
             try {
-                let apiUrl = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${serviceApiKey}&pageNo=1&numOfRows=100&type=json`;
-                if (sido) apiUrl += `&ctpvNm=${encodeURIComponent(sido)}`;
-                if (sigungu) apiUrl += `&sggNm=${encodeURIComponent(sigungu)}`;
-                const data = await fetchWithTimeout(apiUrl);
-                if (!isDataEmpty(data)) {
-                    const rawItems = data.response.body.items;
-                    let items: any[] = [];
-                    if (Array.isArray(rawItems)) items = rawItems;
-                    else if (Array.isArray(rawItems?.item)) items = rawItems.item;
-                    else if (rawItems?.item) items = [rawItems.item];
-                    return items;
-                }
-                return [];
+                let url = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
+                if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
+                if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
+                const data = await fetchWithTimeout(url);
+                return getItems(data);
             } catch (e) { return []; }
         };
 
         const fetchCollectionData = async () => {
-            if (!serviceApiKey || !sido) return [];
+            if (!sido) return [];
             try {
-                const collectionUrl = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${serviceApiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
-                const cData = await fetchWithTimeout(collectionUrl);
-                const rawCItems = cData.response?.body?.items;
-                if (rawCItems) {
-                    if (Array.isArray(rawCItems)) return rawCItems;
-                    else if (rawCItems.item) return Array.isArray(rawCItems.item) ? rawCItems.item : [rawCItems.item];
-                }
-                return [];
+                const url = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${apiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
+                const data = await fetchWithTimeout(url);
+                return getItems(data);
             } catch (e) { return []; }
         };
 
-        // Execute Fetches
         const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
             fetchPublicData(),
             fetchCollectionData(),

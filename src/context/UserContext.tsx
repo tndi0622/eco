@@ -11,7 +11,7 @@ interface UserContextType {
     isAdmin: boolean;
     subscriptionExpiry: string | null;
     adTokensToday: number;
-    useToken: (cost?: number) => boolean;
+    useToken: (cost?: number) => Promise<boolean>;
     addAdToken: () => Promise<boolean>;
     purchaseTokens: (count: number) => Promise<void>;
     subscribe: () => Promise<void>;
@@ -256,13 +256,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
         window.location.href = '/';
     };
 
-    const useToken = (cost: number = 1) => {
+    const useToken = async (cost: number = 1) => {
         if (isSubscribed || isAdmin) return true;
-        if (tokens >= cost) {
-            const nextTokens = tokens - cost;
-            setTokens(nextTokens);
+
+        let success = false;
+        let nextTokens = 0;
+
+        setTokens(prev => {
+            if (prev >= cost) {
+                success = true;
+                nextTokens = prev - cost;
+                return nextTokens;
+            }
+            return prev;
+        });
+
+        if (success) {
             if (user && supabase) {
-                supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens }).then();
+                try {
+                    await supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens });
+                } catch (err) {
+                    console.error("Token Update Error:", err);
+                }
             } else {
                 localStorage.setItem('userTokens', nextTokens.toString());
             }
@@ -274,13 +289,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const addAdToken = async (): Promise<boolean> => {
         if (adTokensToday >= 3) return false;
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const nextTokens = tokens + 1;
-        const nextAdToday = adTokensToday + 1;
-        setTokens(nextTokens);
-        setAdTokensToday(nextAdToday);
+
+        let nextTokens = 0;
+        let nextAdToday = 0;
+
+        setTokens(prev => {
+            nextTokens = prev + 1;
+            return nextTokens;
+        });
+
+        setAdTokensToday(prev => {
+            nextAdToday = prev + 1;
+            return nextAdToday;
+        });
 
         if (user && supabase) {
-            await supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens }).eq('id', user.id);
+            try {
+                await supabase.from('profiles').upsert({ id: user.id, tokens: nextTokens }).eq('id', user.id);
+            } catch (err) {
+                console.error("Ad Token Update Error:", err);
+            }
         } else {
             localStorage.setItem('userTokens', nextTokens.toString());
             localStorage.setItem('adTokensToday', nextAdToday.toString());

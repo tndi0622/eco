@@ -125,9 +125,7 @@ export default function Home() {
         const data = await res.json();
 
         if (data.rules && data.rules.length > 0) {
-          const dayMap: { [key: number]: string } = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
-          const todayDay = new Date().getDay();
-          const todayChar = dayMap[todayDay];
+          const todayChar = new Date().toLocaleDateString('ko-KR', { weekday: 'short' });
 
           let todayItems: string[] = [];
           let timeInfo = '';

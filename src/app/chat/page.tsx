@@ -282,7 +282,7 @@ function ChatContent() {
         fileInputRef.current?.click();
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -292,10 +292,11 @@ function ChatContent() {
         }
 
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
             const base64 = reader.result as string;
 
-            if (useToken(2)) {
+            const hasToken = await useToken(2);
+            if (hasToken) {
                 const matches = base64.match(/^data:(.+);base64,(.+)$/);
                 if (matches) {
                     const mimeType = matches[1];
@@ -327,42 +328,47 @@ function ChatContent() {
     };
 
     useEffect(() => {
-        const pendingImage = sessionStorage.getItem('pendingImage');
-        if (pendingImage) {
-            if (!isSubscribed && tokens < 2 && !isAdmin) {
-                setShowTokenModal(true);
-                sessionStorage.removeItem('pendingImage');
-                return;
-            }
-
-            if (useToken(2)) {
-                const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
-                if (matches) {
-                    const mimeType = matches[1];
-                    const base64Data = matches[2];
-
-                    addMessage({
-                        id: Date.now(),
-                        type: 'user',
-                        content: (
-                            <div>
-                                <img
-                                    src={pendingImage}
-                                    alt="Uploaded Waste"
-                                    style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                                />
-                                <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
-                            </div>
-                        )
-                    });
-
-                    fetchRecycleInfo("image", base64Data, mimeType);
+        const processPendingImage = async () => {
+            const pendingImage = sessionStorage.getItem('pendingImage');
+            if (pendingImage) {
+                if (!isSubscribed && tokens < 2 && !isAdmin) {
+                    setShowTokenModal(true);
+                    sessionStorage.removeItem('pendingImage');
+                    return;
                 }
-            } else {
-                setShowTokenModal(true);
+
+                const hasToken = await useToken(2);
+                if (hasToken) {
+                    const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
+                    if (matches) {
+                        const mimeType = matches[1];
+                        const base64Data = matches[2];
+
+                        addMessage({
+                            id: Date.now(),
+                            type: 'user',
+                            content: (
+                                <div>
+                                    <img
+                                        src={pendingImage}
+                                        alt="Uploaded Waste"
+                                        style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                                    />
+                                    <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                                </div>
+                            )
+                        });
+
+                        fetchRecycleInfo("image", base64Data, mimeType);
+                    }
+                } else {
+                    setShowTokenModal(true);
+                }
+                sessionStorage.removeItem('pendingImage');
             }
-            sessionStorage.removeItem('pendingImage');
-        }
+        };
+
+        processPendingImage();
     }, [tokens, isSubscribed, isAdmin]);
 
     useEffect(() => {
@@ -400,13 +406,14 @@ function ChatContent() {
         sendMessage(input);
     };
 
-    const sendMessage = (text: string) => {
+    const sendMessage = async (text: string) => {
         if (!isSubscribed && tokens < 1 && !isAdmin) {
             setShowTokenModal(true);
             return;
         }
 
-        if (useToken(1)) {
+        const hasToken = await useToken(1);
+        if (hasToken) {
             addMessage({ id: Date.now(), type: 'user', content: text });
             setInput('');
             fetchRecycleInfo(text);
