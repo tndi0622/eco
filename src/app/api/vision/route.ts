@@ -17,6 +17,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
+    let query: string | undefined;
+    let largeWasteItems: any[] = [];
+    let wasteInfoItems: any[] = [];
+
+    const parseLocation = (loc: string | null) => {
+        if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
+        const parts = loc.split(' ');
+        return {
+            sido: parts[0] || '',
+            sigungu: parts[1] || '',
+            dong: parts[2] || ''
+        };
+    };
+
+    const { sido, sigungu, dong } = parseLocation(location);
+
     try {
         const genAI = new GoogleGenerativeAI(geminiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -37,22 +53,9 @@ export async function POST(request: Request) {
 
         const idResult = await model.generateContent([identificationPrompt, imagePart]);
         const identifiedItem = idResult.response.text().trim();
-        const query = identifiedItem;
+        query = identifiedItem;
 
-        // --- 2단계: 공공데이터 가져오기 (병렬) ---
-
-        const parseLocation = (loc: string | null) => {
-            if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
-            const parts = loc.split(' ');
-            return {
-                sido: parts[0] || '',
-                sigungu: parts[1] || '',
-                dong: parts[2] || ''
-            };
-        };
-
-        const { sido, sigungu, dong } = parseLocation(location);
-
+        // --- 2단계: 공공데이터 가져오기 ---
         const fetchWithTimeout = async (url: string, ms: number = 2500) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), ms);
@@ -67,25 +70,14 @@ export async function POST(request: Request) {
             }
         };
 
-        const isDataEmpty = (d: any) => {
-            if (!d?.response?.body?.items) return true;
-            const items = d.response.body.items;
-            if (Array.isArray(items) && items.length === 0) return true;
-            if (typeof items === 'string' && items === '') return true;
-            if (items?.item && Array.isArray(items.item) && items.item.length === 0) return true;
-            return false;
-        };
-
         const getItems = (data: any) => {
-            if (isDataEmpty(data)) return [];
+            if (!data?.response?.body?.items) return [];
             const rawItems = data.response.body.items;
             if (Array.isArray(rawItems)) return rawItems;
             if (Array.isArray(rawItems?.item)) return rawItems.item;
             if (rawItems?.item) return [rawItems.item];
             return [];
         };
-
-        // 일반 재활용 정보 가져오기 로직 제거됨
 
         const fetchLargeWasteData = async () => {
             try {
@@ -98,42 +90,11 @@ export async function POST(request: Request) {
             } catch (e) { return []; }
         };
 
-        const fetchWasteBagData = async () => {
-            try {
-                let url = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
-                if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
-                if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-                const data = await fetchWithTimeout(url);
-                return getItems(data);
-            } catch (e) { return []; }
-        };
-
-        const fetchFoodWasteData = async () => {
-            try {
-                let url = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
-                if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
-                if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-                const data = await fetchWithTimeout(url);
-                return getItems(data);
-            } catch (e) { return []; }
-        };
-
-        const fetchCollectionData = async () => {
-            if (!sido) return [];
-            try {
-                const url = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${apiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
-                const data = await fetchWithTimeout(url);
-                return getItems(data);
-            } catch (e) { return []; }
-        };
-
-        // 대형 폐기물 데이터만 병렬로 실행
         const [largeWasteResult] = await Promise.allSettled([
             fetchLargeWasteData()
         ]);
 
-        let largeWasteItems: any[] = largeWasteResult.status === 'fulfilled' ? largeWasteResult.value : [];
-        let wasteInfoItems: any[] = [];
+        largeWasteItems = largeWasteResult.status === 'fulfilled' ? largeWasteResult.value : [];
 
         // 로컬 데이터 (Supabase/JSON)
         if (sido) {
@@ -145,7 +106,6 @@ export async function POST(request: Request) {
                 if (wasteInfoItems.length === 0) {
                     wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido) && rule.sigungu.includes(sigungu));
                 }
-                // 동(Dong)별로 정렬
                 if (dong && wasteInfoItems.length > 1) {
                     wasteInfoItems.sort((a, b) => {
                         const aName = a.emdNm || '';
@@ -160,15 +120,13 @@ export async function POST(request: Request) {
             } catch (e) { }
         }
 
-
         // --- 3단계: 최종 답변 ---
-        // 컨텍스트 구축
         const largeWasteContext = largeWasteItems.map(item => `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`).join('\n');
         const ruleContext = wasteInfoItems.slice(0, 3).map(item => `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`).join('\n');
 
         const finalPrompt = `
             당신은 친절한 환경 마스코트 '에코'이며, **대형 폐기물 처리 전문가**입니다.
-            사용자가 사진으로 업로드한 **"${query}"**에 대한 올바른 처리 방법을 안내해 주세요.
+            사용자가 사진으로 업로드한 품목에 대한 올바른 처리 방법을 안내해 주세요.
             
             [1. 공공데이터: 규격별 수수료 내역]
             ${largeWasteContext || "관련 수수료 데이터가 직접적으로 없습니다. 유사 품목을 참고하세요."}
@@ -178,9 +136,9 @@ export async function POST(request: Request) {
             
             [지시사항]
             1. 당신의 주요 임무는 사진 속 **대형 폐기물(가구, 가전 등)을 식별하고 정확한 수수료와 처리 절차를 안내**하는 것입니다.
-            2. 식별된 **"${query}"**이(가) 무엇인지 언급하고, 사진상으로 보이는 **대략적인 크기를 [1. 수수료 내역]의 규격과 대조**하여 안내하세요.
+            2. 식별된 품목이 무엇인지 언급하고, 사진상으로 보이는 **대략적인 크기를 [1. 수수료 내역]의 규격과 대조**하여 안내하세요.
             3. **규격별 수수료:** 가능한 모든 규격별 수수료(예: 1인용 5,000원, 2인용 10,000원 등)를 정확히 나열하세요.
-            4. **스티커 구매처:** 어디서 스티커를 살 수 있는지(구청 홈페이지, 주민센터, 편의점, 마트 등) 구체적으로 명시하세요.
+            4. **스티커 구매처:** 어디서 스티커를 살 수 있는지(관할 지자체 홈페이지, 행정복지센터, 편의점, 마트 등) 구체적으로 명시하세요.
             5. **상세 배출 단계:** 
                - 신청/결제 -> 스티커 부착 -> 지정 장소(집 앞 등) 배출 과정을 순서대로 설명하세요.
             6. 가전제품인 경우 '폐가전 무상방문수거(1599-0903)'를 반드시 포함하세요.
@@ -192,18 +150,6 @@ export async function POST(request: Request) {
         const finalResult = await model.generateContent([finalPrompt, imagePart]);
         const responseText = finalResult.response.text();
 
-        // Gemini 실패 시 폴백
-        if (largeWasteItems.length > 0) {
-            return NextResponse.json({
-                resultType: 'list',
-                response: {
-                    body: {
-                        items: largeWasteItems
-                    }
-                }
-            });
-        }
-
         return NextResponse.json({
             resultType: 'gemini',
             message: responseText,
@@ -212,6 +158,19 @@ export async function POST(request: Request) {
 
     } catch (e: any) {
         console.error("Vision Analysis Error:", e);
+
+        if (typeof query !== 'undefined' && largeWasteItems && largeWasteItems.length > 0) {
+            return NextResponse.json({
+                resultType: 'list',
+                response: {
+                    body: {
+                        items: largeWasteItems
+                    }
+                },
+                isFallback: true
+            });
+        }
+
         const isQuotaExceeded = e.status === 429 || e.message?.includes('429') || e.message?.includes('quota');
         const errorMessage = isQuotaExceeded
             ? '오늘의 AI 사용량이 초과되었습니다. 잠시 후 다시 시도하거나 나중에 이용해 주세요.'

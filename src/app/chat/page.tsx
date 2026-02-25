@@ -408,12 +408,12 @@ function ChatContent() {
 
     useEffect(() => {
         const examples = [
-            '예: 깨진 유리, 깨진 그릇',
-            '예: 아이스팩, 보냉가방',
-            '예: 매트리스, 대형 가구',
-            '예: 유통기한 지난 약',
-            '예: 프라이팬, 냄비',
-            '예: 형광등, 건전지'
+            '예: 소파, 침대, 매트리스',
+            '예: 냉장고, 세탁기, 에어컨',
+            '예: 책상, 의자, 장롱',
+            '예: 식탁, 서랍장, 화장대',
+            '예: 피아노, 안마의자, 자전거',
+            '예: 텔레비전, 모니터, 가습기'
         ];
         const randomIndex = Math.floor(Math.random() * examples.length);
         setChatPlaceholder(examples[randomIndex]);
@@ -485,7 +485,7 @@ function ChatContent() {
                         </p>
 
                         <div className={styles.suggestions}>
-                            {['깨진 그릇은 어떻게 버려요?', '오늘 배출 가능한 품목은?', '폐가전 무료 수거 방법', '아이스팩 처리 방법'].map((question, idx) => (
+                            {['소파는 어떻게 버려요?', '침대 매트리스 수수료 확인', '폐가전 무상수거 신청방법', '장롱 버리는 절차'].map((question, idx) => (
                                 <button
                                     key={idx}
                                     className={styles.chip}
@@ -514,7 +514,7 @@ function ChatContent() {
                                         </div>
                                         <FeedbackButtons />
                                         <div className={styles.disclaimer}>
-                                            * 정확한 정보는 관할 구청 청소행정과 위생과(☎ 120)로 확인 부탁드립니다.
+                                            * 정확한 정보는 관할 지자체(구청, 시청 등) 청소행정과(☎ 120)로 확인 부탁드립니다.
                                         </div>
                                     </div>
                                 )}

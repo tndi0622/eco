@@ -94,7 +94,9 @@ export default function Settings() {
 
                     // 1. 연락처 정보 설정
                     if (rule.contact) {
-                        setContactInfo({ name: `${sigungu} 청소행정과`, phone: rule.contact });
+                        let instSuffix = '청';
+                        const name = sigungu.endsWith('동') ? '동사무소' : `${sigungu}${instSuffix}`;
+                        setContactInfo({ name: `${name} 청소행정과`, phone: rule.contact });
                     } else {
                         setContactInfo(defaultContact);
                     }
@@ -342,7 +344,7 @@ export default function Settings() {
 
             {/* Department Contact Section - Dynamic based on Location */}
             <section className={styles.section}>
-                <div className={styles.header}>관할 구청 청소행정과</div>
+                <div className={styles.header}>관할 행정기관 연락처</div>
                 <div className={styles.contactList}>
                     {contactInfo ? (
                         <div className={styles.contactItem}>

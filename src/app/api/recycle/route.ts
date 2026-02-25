@@ -21,9 +21,9 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
-    // 1. 데이터 컨테이너
-    let largeWasteItems: any[] = [];      // 대형 폐기물 수수료 정보
-    let wasteInfoItems: any[] = [];       // 지역별 배출 규칙 (신청 방법용)
+    // 데이터 컨테이너 선언
+    let largeWasteItems: any[] = [];
+    let wasteInfoItems: any[] = [];
 
     // 헬퍼: 위치 파싱
     const parseLocation = (loc: string | null) => {
@@ -53,51 +53,13 @@ export async function GET(request: Request) {
         }
     };
 
-    const isDataEmpty = (d: any) => {
-        if (!d?.response?.body?.items) return true;
-        const items = d.response.body.items;
-        if (Array.isArray(items) && items.length === 0) return true;
-        if (typeof items === 'string' && items === '') return true;
-        if (items?.item && Array.isArray(items.item) && items.item.length === 0) return true;
-        return false;
-    };
-
     const getItems = (data: any) => {
-        if (isDataEmpty(data)) return [];
+        if (!data?.response?.body?.items) return [];
         const rawItems = data.response.body.items;
         if (Array.isArray(rawItems)) return rawItems;
         if (Array.isArray(rawItems?.item)) return rawItems.item;
         if (rawItems?.item) return [rawItems.item];
         return [];
-    };
-
-    // 병렬 데이터 가져오기
-    const fetchPublicData = async () => {
-        try {
-            let apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
-            let data = await fetchWithTimeout(apiUrl);
-
-            // 데이터가 비어있으면 공백 없이 재시도
-            if (isDataEmpty(data) && query.includes(' ')) {
-                const noSpaceQuery = query.replace(/\s+/g, '');
-                apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(noSpaceQuery)}&type=json`;
-                data = await fetchWithTimeout(apiUrl);
-            }
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
-    };
-
-    const fetchCollectionData = async () => {
-        if (!sido) return [];
-        try {
-            const url = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${apiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
     };
 
     const fetchLargeWasteData = async () => {
@@ -108,97 +70,48 @@ export async function GET(request: Request) {
             if (query) url += `&larWasNm=${encodeURIComponent(query)}`;
             const data = await fetchWithTimeout(url);
             return getItems(data);
-        } catch (e) {
-            return [];
-        }
-    };
-
-    const fetchWasteBagData = async () => {
-        try {
-            let url = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
-            if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
-            if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
-    };
-
-    const fetchFoodWasteData = async () => {
-        try {
-            let url = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
-            if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
-            if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
         } catch (e) { return []; }
     };
 
-    // 대형 폐기물 데이터만 병렬로 실행
-    const [largeWasteResult] = await Promise.allSettled([
-        fetchLargeWasteData()
-    ]);
+    // 대형 폐기물 데이터 가져오기
+    try {
+        const [largeWasteResult] = await Promise.allSettled([
+            fetchLargeWasteData()
+        ]);
+        if (largeWasteResult.status === 'fulfilled') largeWasteItems = largeWasteResult.value;
 
-    if (largeWasteResult.status === 'fulfilled') largeWasteItems = largeWasteResult.value;
-
-    // C. 로컬 JSON 조회 (동기 및 처리 속도 최적화) - Supabase 및 행정동 로직 강화
-    if (sido) {
-        try {
-            let items: any[] = [];
-
-            // 1. Supabase 시도
-            if (supabase) {
-                try {
-                    const { data, error } = await supabase
-                        .from('waste_rules')
-                        .select('*')
-                        .ilike('sido', `%${sido}%`)
-                        .ilike('sigungu', `%${sigungu}%`);
-                    if (!error && data) items = data;
-                } catch (e) { console.error("Recycle Supabase Error", e); }
-            }
-
-            // 2. 로컬 JSON으로 폴백
-            if (items.length === 0) {
-                items = (wasteRules as any[]).filter((rule: any) => {
-                    return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
-                });
-            }
-
-            // 3. 행정동 우선순위로 정렬 (강화됨)
-            if (dong && items.length > 1) {
-                items.sort((a, b) => {
-                    const aName = a.emdNm || '';
-                    const bName = b.emdNm || '';
-                    // 정확한 일치 또는 부분 일치 확인 (양방향)
-                    const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
-                    const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
-
-                    if (aMatch && !bMatch) return -1;
-                    if (!aMatch && bMatch) return 1;
-                    return 0;
-                });
-            }
-
-            wasteInfoItems = items;
-        } catch (e) {
-            console.error("Waste Info Lookup Error:", e);
+        if (sido) {
+            try {
+                if (supabase) {
+                    const { data, error } = await supabase.from('waste_rules').select('*').ilike('sido', `%${sido}%`).ilike('sigungu', `%${sigungu}%`);
+                    if (!error && data) wasteInfoItems = data;
+                }
+                if (wasteInfoItems.length === 0) {
+                    wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido) && rule.sigungu.includes(sigungu));
+                }
+                if (dong && wasteInfoItems.length > 1) {
+                    wasteInfoItems.sort((a, b) => {
+                        const aName = a.emdNm || '';
+                        const bName = b.emdNm || '';
+                        const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
+                        const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
+                        if (aMatch && !bMatch) return -1;
+                        if (!aMatch && bMatch) return 1;
+                        return 0;
+                    });
+                }
+            } catch (e) { }
         }
-    }
 
-    // 2. Gemini 사용
-    if (geminiKey) {
-        try {
+        // Gemini 사용
+        if (geminiKey) {
             const genAI = new GoogleGenerativeAI(geminiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-            // 오늘 정보 계산 (KST)
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
             const kstGap = 9 * 60 * 60 * 1000;
             const todayKST = new Date(utc + kstGap);
-
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             const dayName = days[todayKST.getDay()];
             const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
@@ -209,7 +122,7 @@ export async function GET(request: Request) {
             ).join('\n');
 
             const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
-                `- [신청안내(${item.sigungu})] 방법: ${item.gnrlWsteDschrgMthd || '관할 구청 홈페이지 또는 지정 판매소 스티커 구매'} (동네별 상세: ${item.emdNm || '전체'})`
+                `- [신청안내(${item.sigungu})] 방법: ${item.gnrlWsteDschrgMthd || '관할 지자체 홈페이지 또는 지정 판매소 스티커 구매'} (동네별 상세: ${item.emdNm || '전체'})`
             ).join('\n');
 
             const prompt = `
@@ -229,7 +142,7 @@ export async function GET(request: Request) {
 
                 [지시사항]
                 1. **수수료 안내 (정확성):** [공공데이터]의 문구(규격)를 그대로 인용하여 **크기별/규격별 수수료**를 명확히 목록화해서 알려주세요. 사용자가 자신의 물건 크기를 보고 판단할 수 있게 하세요.
-                2. **스티커 구매 및 결제:** 어디서 스티커를 살 수 있는지(예: 관할 구청 홈페이지 온라인 신청 후 출력, 근처 편의점, 마트, 지정판매소 등)를 구체적으로 명시하세요.
+                2. **스티커 구매 및 결제:** 어디서 스티커를 살 수 있는지(예: 관할 지자체(구청, 시청 등) 홈페이지 온라인 신청 후 출력, 근처 편의점, 마트, 지정판매소 등)를 구체적으로 명시하세요.
                 3. **상세 배출 프로세스:** 
                    - 1단계: 신청 및 결제 (홈페이지 또는 방문)
                    - 2단계: 납부필증(스티커) 부착 또는 접수번호 기재
@@ -250,44 +163,40 @@ export async function GET(request: Request) {
                             controller.enqueue(encoder.encode(chunkText));
                         }
                         controller.close();
-                    } catch (e) {
-                        controller.error(e);
-                    }
+                    } catch (e) { controller.error(e); }
                 },
             });
 
             return new Response(stream, {
-                headers: {
-                    'Content-Type': 'text/plain; charset=utf-8',
-                    'Transfer-Encoding': 'chunked',
-                },
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Transfer-Encoding': 'chunked' },
             });
-
-        } catch (error: any) {
-            console.error("Gemini Error:", error);
-            const isQuotaExceeded = error.status === 429 || error.message?.includes('429') || error.message?.includes('quota');
-            const errorMessage = isQuotaExceeded
-                ? '오늘의 AI 사용량이 초과되었습니다. 잠시 후 다시 시도하거나 나중에 이용해 주세요.'
-                : (error.status === 503 || error.message?.includes('503'))
-                    ? 'AI 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
-                    : 'AI 서비스 연결 중에 오류가 발생했습니다.';
-            return NextResponse.json({ error: errorMessage }, { status: error.status || 500 });
         }
+    } catch (error: any) {
+        console.error("Gemini Error:", error);
+        if (largeWasteItems.length > 0) {
+            return NextResponse.json({
+                resultType: 'list',
+                response: { body: { items: largeWasteItems } },
+                isFallback: true,
+                fallbackReason: error.status === 429 ? 'quota_exceeded' : 'api_error'
+            });
+        }
+        const isQuotaExceeded = error.status === 429 || error.message?.includes('429') || error.message?.includes('quota');
+        const errorMessage = isQuotaExceeded
+            ? '오늘의 AI 사용량이 초과되었습니다. 잠시 후 다시 시도하거나 나중에 이용해 주세요.'
+            : (error.status === 503 || error.message?.includes('503'))
+                ? 'AI 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
+                : 'AI 서비스 연결 중에 오류가 발생했습니다.';
+        return NextResponse.json({ error: errorMessage }, { status: error.status || 500 });
     }
 
-    // Gemini 실패 시 폴백
     if (largeWasteItems.length > 0) {
         return NextResponse.json({
             resultType: 'list',
-            response: {
-                body: {
-                    items: largeWasteItems
-                }
-            }
+            response: { body: { items: largeWasteItems } }
         });
     }
 
-    // 최종 폴백
     return NextResponse.json({
         message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
     }, { status: 500 });
