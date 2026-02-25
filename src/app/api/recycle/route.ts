@@ -301,7 +301,10 @@ export async function GET(request: Request) {
 
         } catch (error: any) {
             console.error("Gemini Error:", error);
-            return NextResponse.json({ error: '인공지능 서비스 연결 오류' }, { status: 500 });
+            const errorMessage = error.status === 503 || error.message?.includes('503')
+                ? '인공지능 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
+                : '인공지능 서비스 연결 중에 오류가 발생했습니다.';
+            return NextResponse.json({ error: errorMessage }, { status: 500 });
         }
     }
 

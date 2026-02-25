@@ -8,6 +8,7 @@ export interface Message {
     content: React.ReactNode;
     source?: string;
     avatarUrl?: string;
+    isError?: boolean;
 }
 
 interface ChatContextType {

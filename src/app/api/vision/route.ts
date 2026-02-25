@@ -229,6 +229,10 @@ export async function POST(request: Request) {
 
     } catch (e: any) {
         console.error("Vision Analysis Error:", e);
-        return NextResponse.json({ error: 'Failed to analyze image' }, { status: 500 });
+        // 503 Service Unavailable (Overloaded) 또는 기타 Gemini 관련 에러 처리
+        const errorMessage = e.status === 503 || e.message?.includes('503')
+            ? 'AI 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
+            : '사진을 분석하는 도중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

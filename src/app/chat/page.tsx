@@ -159,7 +159,12 @@ function ChatContent() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: imageBase64, mimeType, location })
                 });
+
                 const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || '사진 분석 중 오류가 발생했습니다.');
+                }
 
                 if (data.resultType === 'gemini') {
                     addMessage({
@@ -167,7 +172,8 @@ function ChatContent() {
                         type: 'bot',
                         content: <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}><FormattedText text={data.message} /></div>,
                         source: '제공: 에코 이미지 분석 서비스',
-                        avatarUrl: MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)]
+                        avatarUrl: MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)],
+                        isError: false
                     });
                 }
             } else {
@@ -180,14 +186,16 @@ function ChatContent() {
                 const res = await fetch(`/api/recycle?q=${encodeURIComponent(keyword)}${locationParam}`);
 
                 if (!res.ok) {
-                    throw new Error('API request failed');
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || '답변을 생성하는 중에 오류가 발생했습니다.');
                 }
 
                 const reader = res.body?.getReader();
-                const decoder = new TextEncoder();
                 const textDecoder = new TextDecoder();
 
-                if (!reader) return;
+                if (!reader) {
+                    throw new Error('응답 데이터를 읽을 수 없습니다.');
+                }
 
                 const botMessageId = Date.now() + Math.random();
                 // 초기 빈 봇 메시지 추가
@@ -195,7 +203,8 @@ function ChatContent() {
                     id: botMessageId,
                     type: 'bot',
                     content: '',
-                    avatarUrl: MASCOT_IMAGES[0]
+                    avatarUrl: MASCOT_IMAGES[0],
+                    isError: false
                 });
 
                 let fullText = '';
@@ -227,13 +236,20 @@ function ChatContent() {
                             <FormattedText text={fullText} />
                         </div>
                     ),
-                    source: '정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원'
+                    source: '정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원',
+                    isError: false
                 });
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Chat Error", error);
-            addMessage({ id: Date.now(), type: 'bot', content: '오류가 발생했습니다.', avatarUrl: '/images/eco_mascot_no.png' });
+            addMessage({
+                id: Date.now(),
+                type: 'bot',
+                content: error.message || '죄송해요, 서비스 연결 중에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+                avatarUrl: '/images/eco_mascot_no.png',
+                isError: true
+            });
         } finally {
             setIsThinking(false);
         }
@@ -491,7 +507,7 @@ function ChatContent() {
                                 )}
                                 <div>{msg.content}</div>
 
-                                {msg.type === 'bot' && (
+                                {msg.type === 'bot' && !msg.isError && (
                                     <div className={styles.botFooter}>
                                         <div className={styles.source}>
                                             📚 {msg.source || '출처: 환경부 재활용품 분리배출 가이드라인 (2025)'}
