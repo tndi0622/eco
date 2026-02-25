@@ -11,7 +11,6 @@ import { useUser } from '@/context/UserContext';
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false });
 const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false });
 import AdBanner from '@/components/AdBanner';
-import EcoDashboard from '@/components/EcoDashboard';
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState<boolean | null>(null);
@@ -264,7 +263,6 @@ export default function Home() {
   return (
     <div className={styles.containerMinimal}>
       <div className={styles.contentWrapper}>
-        <EcoDashboard />
         <section className={styles.heroEntry}>
           <img src="/images/eco_mascot_question.png" alt="Mascot" className={styles.heroMascot} />
           <h1 className={styles.heroTitleMinimal}>
