@@ -31,6 +31,7 @@ declare global {
             postMessage: (message: string) => void;
         };
         handleNativeGoogleLogin?: (idToken: string, accessToken: string) => void;
+        handleFcmToken?: (token: string) => void;
     }
 }
 
@@ -80,6 +81,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
         };
 
+        // FCM Token Handler
+        window.handleFcmToken = async (fcmToken: string) => {
+            console.log("Received FCM Token from Flutter:", fcmToken);
+            localStorage.setItem('fcmToken', fcmToken);
+
+            // If user is already logged in, update their profile
+            if (supabase) {
+                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                if (currentUser) {
+                    await supabase
+                        .from('profiles')
+                        .update({ fcm_token: fcmToken })
+                        .eq('id', currentUser.id);
+                }
+            }
+        };
+
         // Signal that the webview is ready for the app to pass tokens
         if (window.flutter_inappwebview) {
             window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'webViewReady');
@@ -98,6 +116,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (newUser) {
             lastFetchedId.current = newUser.id;
             fetchProfile(newUser.id);
+
+            // Also check for a pending FCM token to save
+            const pendingFcmToken = localStorage.getItem('fcmToken');
+            if (pendingFcmToken && supabase) {
+                supabase
+                    .from('profiles')
+                    .update({ fcm_token: pendingFcmToken })
+                    .eq('id', newUser.id)
+                    .then();
+            }
         } else {
             lastFetchedId.current = null;
             loadLocalData();
