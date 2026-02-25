@@ -5,7 +5,7 @@ import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
 
-// Simple Toggle Component
+// 간단한 토글 컴포넌트
 const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
     <div className={`${styles.toggle} ${active ? styles.active : ''}`} onClick={onClick}>
         <div className={styles.slider} />
@@ -25,7 +25,7 @@ export default function Calendar() {
     const { location } = useLocation();
     const { isSubscribed } = useUser();
 
-    // Notification State
+    // 알림 상태
     const [notificationSettings, setNotificationSettings] = useState({
         general: false,
         recycle: false,
@@ -47,7 +47,7 @@ export default function Calendar() {
         localStorage.setItem('notificationSettings', JSON.stringify(next));
     };
 
-    // Default Schedule (Fallback)
+    // 기본 스케줄 (폴백)
     const defaultSchedule: { [key: number]: string } = {
         0: '배출 없음',
         1: '일반쓰레기, 음식물',
@@ -59,20 +59,20 @@ export default function Calendar() {
     };
 
     const [dischargeSchedule, setDischargeSchedule] = useState<{ [key: number]: string }>(defaultSchedule);
-    const [dischargeTime, setDischargeTime] = useState('18:00 ~ 24:00'); // Default time
+    const [dischargeTime, setDischargeTime] = useState('18:00 ~ 24:00'); // 기본 시간
     const [isApiLoading, setIsApiLoading] = useState(false);
 
-    // Parse Helper
+    // 파싱 헬퍼
     const parseRulesToSchedule = (rules: any[]) => {
-        // Use Sets to automatically deduplicate items for each day
+        // 요일별 항목 중복 제거를 위해 Set 사용
         const dailySets = Array.from({ length: 7 }, () => new Set<string>());
 
         rules.forEach(rule => {
-            // Helper to add items to the Set for specific days
+            // 특정 요일에 항목을 추가하는 헬퍼
             const addItems = (dayStr: string, itemType: string) => {
                 if (!dayStr) return;
 
-                // standard keys check
+                // 표준 키 확인
                 Object.keys(dayMap).forEach(key => {
                     if (dayStr.includes(key)) {
                         const idx = dayMap[key];
@@ -80,7 +80,7 @@ export default function Calendar() {
                     }
                 });
 
-                // "everyday" check
+                // "매일" 확인
                 if (dayStr.includes('매일')) {
                     for (let i = 0; i < 7; i++) {
                         dailySets[i].add(itemType);
@@ -93,7 +93,7 @@ export default function Calendar() {
             addItems(rule.recycleDschrgDay, '재활용');
         });
 
-        // Convert Sets to formatted strings
+        // Set을 포맷된 문자열로 변환
         const newSchedule: { [key: number]: string } = {};
         for (let i = 0; i < 7; i++) {
             if (dailySets[i].size > 0) {
@@ -109,8 +109,8 @@ export default function Calendar() {
     useEffect(() => {
         setToday(new Date());
 
-        // Prefer saved schedule? Or refresh from API?
-        // If user has location, try API first.
+        // 저장된 스케줄을 우선 사용할지 또는 API에서 새로고침할지 결정
+        // 위치 정보가 있는 경우 API를 먼저 시도함
         if (location && location !== '위치 설정이 필요합니다') {
             const fetchRules = async () => {
                 setIsApiLoading(true);
@@ -127,9 +127,9 @@ export default function Calendar() {
                             const newSched = parseRulesToSchedule(data.rules);
                             setDischargeSchedule(newSched);
 
-                            // Extract time info
+                            // 시간 정보 추출
                             let timeInfo = '';
-                            // Try to find a valid time from any rule
+                            // 규칙에서 유효한 시간 찾기 시도
                             const timeRule = data.rules.find((r: any) => r.gnrlWsteDschrgTime || r.recycleDschrgTime || r.foodWsteDschrgTime);
                             if (timeRule) {
                                 timeInfo = timeRule.gnrlWsteDschrgTime || timeRule.recycleDschrgTime || timeRule.foodWsteDschrgTime;
@@ -137,7 +137,7 @@ export default function Calendar() {
                             const formattedTime = timeInfo ? timeInfo.replace('~', ' ~ ') : '18:00 ~ 24:00';
                             setDischargeTime(formattedTime);
 
-                            // Save to local storage to persist recent auto-fetch
+                            // 최근 자동 조회를 유지하기 위해 로컬 스토리지에 저장
                             localStorage.setItem('ecoDischargeSchedule', JSON.stringify(newSched));
                             localStorage.setItem('ecoDischargeTime', formattedTime);
                         } else {
@@ -173,7 +173,7 @@ export default function Calendar() {
         }
     };
 
-    // Derived State
+    // 파생 상태
     const todayDayIndex = today ? today.getDay() : 0;
     const dischargeInfo = dischargeSchedule[todayDayIndex] || '배출 없음';
 
@@ -249,7 +249,7 @@ export default function Calendar() {
 
     // ... (keep existing useEffect for location and API)
 
-    // Helper to check if a date is selected
+    // 날짜 선택 여부 확인 헬퍼
     const isSelected = (day: number) => {
         if (!selectedDate || !day) return false;
         return (
@@ -264,21 +264,21 @@ export default function Calendar() {
         const newDate = new Date(year, month, day);
         setSelectedDate(newDate);
 
-        // Update selected schedule info
+        // 선택된 스케줄 정보 업데이트
         const dayOfWeek = newDate.getDay();
         setSelectedSchedule(dischargeSchedule[dayOfWeek] || '배출 없음');
     };
 
-    // Helper to get icons/dots for calendar grid
+    // 캘린더 그리드용 아이콘/도트 헬퍼
     const getDayContent = (day: number) => {
         if (!day) return null;
         const currentLoopDate = new Date(year, month, day);
         const dayOfWeek = currentLoopDate.getDay();
         const info = dischargeSchedule[dayOfWeek];
 
-        let dotColor = '#ddd'; // Default no discharge
-        if (info.includes('일반')) dotColor = '#27AE60'; // Green
-        else if (info.includes('재활용')) dotColor = '#F2994A'; // Orange
+        let dotColor = '#ddd'; // 기본적으로 배출 없음
+        if (info.includes('일반')) dotColor = '#27AE60'; // 녹색
+        else if (info.includes('재활용')) dotColor = '#F2994A'; // 오렌지색
         else if (info.includes('배출 없음')) dotColor = 'transparent';
 
         return (
@@ -319,7 +319,7 @@ export default function Calendar() {
                 </div>
             </div>
 
-            {/* 2. Action Card (Selected Date Info) */}
+            {/* 2. 작업 카드 (선택된 날짜 정보) */}
             <section className={styles.actionCard}>
                 <div className={styles.actionHeader}>
                     {selectedDate && (
@@ -348,7 +348,7 @@ export default function Calendar() {
                     )}
                 </div>
 
-                {/* Notification Settings Embedded in Calendar */}
+                {/* 캘린더에 포함된 알림 설정 */}
                 <div className={styles.notiSection}>
                     <div className={styles.notiHeader}>맞춤 알림 설정</div>
                     <div className={styles.notificationList}>

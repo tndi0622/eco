@@ -24,10 +24,10 @@ export default function AddressSearch({ onComplete, onClose, onDetectLocation }:
             fullAddress += (extraAddress !== '' ? ` (${extraAddress})` : '');
         }
 
-        // Custom format: Sido + Sigungu + Bname
+        // 커스텀 형식: 시도 + 시군구 + 법정동명
         const customAddr = `${data.sido} ${data.sigungu} ${data.bname}`.trim();
 
-        // Return the formatted address
+        // 포맷된 주소 반환
         onComplete(customAddr);
     };
 

@@ -21,15 +21,15 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
-    // 1. Data Containers
-    let publicDataItems: any[] = [];      // Classification/Recycling Method
-    let collectionPointItems: any[] = []; // Recovery Centers
-    let wasteInfoItems: any[] = [];       // Living Waste Discharge Rules (Time/Place)
-    let largeWasteItems: any[] = [];      // Large Waste Fee Info (New)
-    let wasteBagItems: any[] = [];        // Waste Bag Price Info (New)
-    let foodWasteItems: any[] = [];       // Food Waste Cert Price Info (New)
+    // 1. 데이터 컨테이너
+    let publicDataItems: any[] = [];      // 분류/재활용 방법
+    let collectionPointItems: any[] = []; // 수거 센터
+    let wasteInfoItems: any[] = [];       // 생활 폐기물 배출 규칙 (시간/장소)
+    let largeWasteItems: any[] = [];      // 대형 폐기물 수수료 정보 (신규)
+    let wasteBagItems: any[] = [];        // 쓰레기 봉투 가격 정보 (신규)
+    let foodWasteItems: any[] = [];       // 음식물 쓰레기 납부 필증 가격 정보 (신규)
 
-    // Helper: Parse Location
+    // 헬퍼: 위치 파싱
     const parseLocation = (loc: string | null) => {
         if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
         const parts = loc.split(' ');
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 
     const { sido, sigungu, dong } = parseLocation(location);
 
-    // Helper: Timeout Wrapper
+    // 헬퍼: 타임아웃 래퍼
     const fetchWithTimeout = async (url: string, ms: number = 2500) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), ms);
@@ -75,13 +75,13 @@ export async function GET(request: Request) {
         return [];
     };
 
-    // Parallel Fetching
+    // 병렬 데이터 가져오기
     const fetchPublicData = async () => {
         try {
             let apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
             let data = await fetchWithTimeout(apiUrl);
 
-            // Retry without spaces if empty
+            // 데이터가 비어있으면 공백 없이 재시도
             if (isDataEmpty(data) && query.includes(' ')) {
                 const noSpaceQuery = query.replace(/\s+/g, '');
                 apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(noSpaceQuery)}&type=json`;
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
         } catch (e) { return []; }
     };
 
-    // Execute in parallel
+    // 병렬로 실행
     const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
         fetchPublicData(),
         fetchCollectionData(),
@@ -154,12 +154,12 @@ export async function GET(request: Request) {
     if (wasteBagResult.status === 'fulfilled') wasteBagItems = wasteBagResult.value;
     if (foodWasteResult.status === 'fulfilled') foodWasteItems = foodWasteResult.value;
 
-    // C. Local JSON Lookup (Sync & Fast) - Enhanced with Supabase & Dong Logic
+    // C. 로컬 JSON 조회 (동기 및 처리 속도 최적화) - Supabase 및 행정동 로직 강화
     if (sido) {
         try {
             let items: any[] = [];
 
-            // 1. Try Supabase
+            // 1. Supabase 시도
             if (supabase) {
                 try {
                     const { data, error } = await supabase
@@ -171,19 +171,19 @@ export async function GET(request: Request) {
                 } catch (e) { console.error("Recycle Supabase Error", e); }
             }
 
-            // 2. Fallback to Local JSON
+            // 2. 로컬 JSON으로 폴백
             if (items.length === 0) {
                 items = (wasteRules as any[]).filter((rule: any) => {
                     return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
                 });
             }
 
-            // 3. Sort by Dong Priority (Enhanced)
+            // 3. 행정동 우선순위로 정렬 (강화됨)
             if (dong && items.length > 1) {
                 items.sort((a, b) => {
                     const aName = a.emdNm || '';
                     const bName = b.emdNm || '';
-                    // Check strict or partial match (Bidirectional)
+                    // 정확한 일치 또는 부분 일치 확인 (양방향)
                     const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
                     const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
 
@@ -199,13 +199,13 @@ export async function GET(request: Request) {
         }
     }
 
-    // 2. Use Gemini
+    // 2. Gemini 사용
     if (geminiKey) {
         try {
             const genAI = new GoogleGenerativeAI(geminiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-            // Calculate Today's Info (KST)
+            // 오늘 정보 계산 (KST)
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
             const kstGap = 9 * 60 * 60 * 1000;
@@ -305,7 +305,7 @@ export async function GET(request: Request) {
         }
     }
 
-    // Fallback if Gemini fails
+    // Gemini 실패 시 폴백
     if (publicDataItems.length > 0 || largeWasteItems.length > 0) {
         return NextResponse.json({
             resultType: 'list',
@@ -317,7 +317,7 @@ export async function GET(request: Request) {
         });
     }
 
-    // Ultimate Fallback
+    // 최종 폴백
     return NextResponse.json({
         message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
     }, { status: 500 });

@@ -25,11 +25,11 @@ export default function Header() {
   };
 
   const handleFavoriteClick = (favName: string) => {
-    // Promote this favorite to primary and update context
+    // 이 즐겨찾기를 기본 위치로 승격하고 컨텍스트 업데이트
     promoteFavorite(favName);
     setShowDetails(false);
 
-    // Force reload to sync all data fresh, similar to Settings page logic
+    // 설정 페이지 로직과 유사하게 모든 데이터를 최신 상태로 동기화하기 위해 강제 새로고침
     setTimeout(() => {
       window.location.reload();
     }, 100);

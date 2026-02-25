@@ -57,7 +57,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         });
 
-        // Native Google Login Handler
+        // 네이티브 구글 로그인 핸들러
         window.handleNativeGoogleLogin = async (idToken: string, accessToken: string) => {
             console.log("Received native token from Flutter");
             if (!supabase) return;
@@ -74,19 +74,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     alert("로그인 중 오류가 발생했습니다.");
                 } else if (data.user) {
                     console.log("Native Login Success:", data.user.email);
-                    // Force a local state update if needed, though onAuthStateChange should handle it
+                    // 필요한 경우 로컬 상태 업데이트를 강제 (onAuthStateChange가 처리하긴 함)
                 }
             } catch (err) {
                 console.error("Native Login Exception:", err);
             }
         };
 
-        // FCM Token Handler
+        // FCM 토큰 핸들러
         window.handleFcmToken = async (fcmToken: string) => {
             console.log("Received FCM Token from Flutter:", fcmToken);
             localStorage.setItem('fcmToken', fcmToken);
 
-            // If user is already logged in, update their profile
+            // 사용자가 이미 로그인된 경우 프로필 업데이트
             if (supabase) {
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
                 if (currentUser) {
@@ -98,7 +98,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        // Signal that the webview is ready for the app to pass tokens
+        // 앱이 토큰을 전달할 수 있도록 웹뷰가 준비되었음을 알림
         if (window.flutter_inappwebview) {
             window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'webViewReady');
         }
@@ -117,7 +117,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             lastFetchedId.current = newUser.id;
             fetchProfile(newUser.id);
 
-            // Also check for a pending FCM token to save
+            // 저장할 대기 중인 FCM 토큰이 있는지 확인
             const pendingFcmToken = localStorage.getItem('fcmToken');
             if (pendingFcmToken && supabase) {
                 supabase
@@ -155,10 +155,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
             setIsSubscribed(isManager || data.is_subscribed === true);
             setSubscriptionExpiry(data.subscription_expiry);
 
-            // Daily login token logic for authenticated users
+            // 인증된 사용자를 위한 일일 로그인 토큰 로직
             const todayStr = new Date().toISOString().split('T')[0];
-            const lastLoginDate = localStorage.getItem('lastLoginDate'); // We can still use local storage to track the *session* login
-            // Or better, we could have a last_login column in DB, but for now local storage is easier.
+            const lastLoginDate = localStorage.getItem('lastLoginDate'); // 세션 로그인을 추적하기 위해 여전히 로컬 스토리지를 사용할 수 있음
+            // DB에 last_login 컬럼을 두는 것이 더 좋지만, 현재로서는 로컬 스토리지가 더 간단함.
 
             if (lastLoginDate !== todayStr) {
                 localStorage.setItem('lastLoginDate', todayStr);
@@ -166,7 +166,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setAdTokensToday(0);
 
                 currentTokens += 1;
-                // Update DB
+                // 데이터베이스 업데이트
                 supabase.from('profiles').upsert({ id: userId, tokens: currentTokens }).then();
             } else {
                 setAdTokensToday(parseInt(localStorage.getItem('adTokensToday') || '0'));
@@ -180,27 +180,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const savedTokens = localStorage.getItem('userTokens');
         if (savedTokens) setTokens(parseInt(savedTokens));
 
-        // Daily reset and login token logic
+        // 일일 초기화 및 로그인 토큰 로직
         const todayStr = new Date().toISOString().split('T')[0];
         const lastLoginDate = localStorage.getItem('lastLoginDate');
         const savedAdTokens = localStorage.getItem('adTokensToday');
 
         if (lastLoginDate !== todayStr) {
-            // New Day logic
+            // 새로운 하루 로직
             localStorage.setItem('lastLoginDate', todayStr);
             localStorage.setItem('adTokensToday', '0');
             setAdTokensToday(0);
 
-            // Give 1 daily token
+            // 일일 토큰 1개 증정
             const currentTokens = savedTokens ? parseInt(savedTokens) : tokens;
             const nextTokens = currentTokens + 1;
             setTokens(nextTokens);
             localStorage.setItem('userTokens', nextTokens.toString());
 
-            // This alert might be annoying on every fresh start, but user requested it as a feature
-            // Better to show a toast or something, but let's keep it simple for now if they didn't specify.
-            // Actually, let's just do it silently or with a console log for now, or even better, 
-            // since I'm implementing it in UserProvider, it will run on every refresh.
+            // 이 알림은 새로 시작할 때마다 짜증날 수 있지만, 사용자가 요청한 기능임
+            // 토스트 메시지 등을 보여주는 것이 더 좋지만, 별도의 요청이 없었으므로 간단하게 유지함.
+            // 실제로는 지금은 그냥 조용히 처리하거나 콘솔 로그만 남기기로 함.
+            // UserProvider에 구현되어 있으므로 매번 새로고침할 때마다 실행됨.
         } else {
             setAdTokensToday(parseInt(savedAdTokens || '0'));
         }
@@ -209,7 +209,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const loginWithGoogle = async () => {
         if (!supabase) return;
 
-        // Flutter Native Login check
+        // Flutter 네이티브 로그인 확인
         if (window.flutter_inappwebview) {
             window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'googleLogin');
             return;
@@ -233,7 +233,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = async () => {
-        // Notify Flutter to logout as well and wait for completion
+        // Flutter에도 로그아웃을 알리고 완료될 때까지 대기
         if (window.flutter_inappwebview) {
             try {
                 await window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'logout');

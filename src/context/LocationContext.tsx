@@ -53,7 +53,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         }
 
         if (!saved) {
-            detectLocation(); // Auto detect on first load if no location
+            detectLocation(); // 위치 정보가 없는 경우 첫 로드 시 자동 감지
         }
     }, []);
 
@@ -71,26 +71,26 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     const addFavorite = (name: string, address: string, coords?: { lat: number; lng: number }) => {
         const newFav = { name, address, coordinates: coords };
 
-        // Check if address already exists
+        // 주소가 이미 존재하는지 확인
         const existingByAddress = favorites.find(f => f.address === address);
 
-        // Check if name already exists (fallback, though address check takes precedence as per user request)
+        // 이름이 이미 존재하는지 확인 (폴백, 사용자 요청에 따라 주소 확인이 우선됨)
         const existingByName = favorites.find(f => f.name === name);
 
         let updated;
 
         if (existingByAddress) {
-            // Same address exists -> Update name (and coords if new ones are better)
-            // Remove the old one and add the new one at top (or replace in place? user said "change name")
-            // Let's replace it and move to top as it's the "latest" interaction
+            // 동일한 주소가 존재함 -> 이름 업데이트 (새 좌표가 더 좋은 경우 좌표도 업데이트)
+            // 기존 항목을 제거하고 새 항목을 맨 위에 추가 (또는 그 자리에서 교체? 사용자는 "이름 변경"이라고 함)
+            // "최신" 상호작용이므로 교체하여 맨 위로 이동함
             const others = favorites.filter(f => f.address !== address);
             updated = [newFav, ...others];
         } else if (existingByName) {
-            // Same name exists (but different address) -> Update address
+            // 동일한 이름이 존재함 (다른 주소) -> 주소 업데이트
             const others = favorites.filter(f => f.name !== name);
             updated = [newFav, ...others];
         } else {
-            // New location
+            // 새로운 위치
             updated = [newFav, ...favorites];
         }
 
@@ -104,7 +104,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 return {
                     name: newName,
                     address: newAddress,
-                    coordinates: newCoords || fav.coordinates // Keep old coords if not provided
+                    coordinates: newCoords || fav.coordinates // 제공되지 않은 경우 기존 좌표 유지
                 };
             }
             return fav;
@@ -112,7 +112,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         setFavorites(updated);
         localStorage.setItem('userFavorites', JSON.stringify(updated));
 
-        // If the updated one was the active location, update the current location state too
+        // 업데이트된 항목이 활성화된 위치였던 경우, 현재 위치 상태도 업데이트
         if (location === favorites.find(f => f.name === oldName)?.address) {
             setLocation(newAddress);
             if (newCoords) updateCoordinates(newCoords.lat, newCoords.lng);
@@ -132,7 +132,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const updated = [target, ...others];
         setFavorites(updated);
         localStorage.setItem('userFavorites', JSON.stringify(updated));
-        // Also update current location context to this address
+        // 현재 위치 컨텍스트도 이 주소로 업데이트
         setLocation(target.address);
         if (target.coordinates) {
             setCoordinates(target.coordinates);

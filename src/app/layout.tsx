@@ -12,7 +12,7 @@ import NotificationManager from '@/components/NotificationManager';
 import Script from 'next/script';
 
 const notoSansKr = Noto_Sans_KR({
-  weight: ['300', '400', '500', '700'], // Optimized weights
+  weight: ['300', '400', '500', '700'], // 최적화된 가중치
   subsets: ['latin'],
   variable: '--font-noto-sans-kr',
   display: 'swap',

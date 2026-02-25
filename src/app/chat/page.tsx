@@ -55,19 +55,19 @@ function ChatContent() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { location } = useLocation();
 
-    // File Input Ref
+    // 파일 입력 Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Voice Recognition State
+    // 음성 인식 상태
     const [isListening, setIsListening] = useState(false);
 
-    // Bot Thinking State
+    // 봇 생각 상태
     const [isThinking, setIsThinking] = useState(false);
     const [welcomeMascot, setWelcomeMascot] = useState('');
     const [loadingMascot, setLoadingMascot] = useState(MASCOT_IMAGES[0]);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
 
-    // UI State for Attach Menu
+    // 첨부 메뉴용 UI 상태
     const [showAttachMenu, setShowAttachMenu] = useState(false);
     const [showTokenModal, setShowTokenModal] = useState(false);
     const [isAdLoading, setIsAdLoading] = useState(false);
@@ -75,7 +75,7 @@ function ChatContent() {
     const { tokens, isSubscribed, isAdmin, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-        // Use a small timeout to ensure DOM has updated and rendered
+        // DOM이 업데이트되고 렌더링되었는지 확인하기 위해 약간의 타임아웃 사용
         setTimeout(() => {
             if (messagesEndRef.current) {
                 messagesEndRef.current.scrollIntoView({
@@ -86,7 +86,7 @@ function ChatContent() {
         }, behavior === 'auto' ? 0 : 100);
     };
 
-    // Use global state instead of local state
+    // 로컬 상태 대신 글로벌 상태 사용
     const { messages, addMessage, updateMessage } = useChat();
     const [input, setInput] = useState('');
 
@@ -95,16 +95,16 @@ function ChatContent() {
 
         const lastMessage = messages[messages.length - 1];
         if (lastMessage?.type === 'user') {
-            // When user sends a message, scroll immediately to it
+            // 사용자가 메시지를 보내면 즉시 해당 위치로 스크롤
             scrollToBottom('auto');
         } else {
-            // Smooth scroll for bot messages and skeleton
+            // 봇 메시지와 스켈레톤에 대해 부드러운 스크롤 적용
             scrollToBottom('smooth');
         }
     }, [messages, isThinking]);
 
     useEffect(() => {
-        // Randomize welcome mascot on client mount
+        // 클라이언트 마운트 시 웰컴 마스코트 무작위 설정
         const randomMascot = MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)];
         setWelcomeMascot(randomMascot);
     }, []);
@@ -141,10 +141,10 @@ function ChatContent() {
         return { keyword: cleanText, modifier };
     };
 
-    // Updated fetch function to handle Image
+    // 이미지를 처리할 수 있도록 업데이트된 fetch 함수
     const fetchRecycleInfo = async (queryMock: string, imageBase64?: string, mimeType?: string) => {
         setIsThinking(true);
-        // Randomize loading mascot each time
+        // 매번 로딩 마스코트 무작위 설정
         setLoadingMascot(MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)]);
 
         let data;
@@ -153,7 +153,7 @@ function ChatContent() {
 
         try {
             if (imageBase64) {
-                // Image Analysis (Keep JSON for Vision as it's simpler)
+                // 이미지 분석 (Vision API는 JSON 형식이 더 간단하므로 JSON 유지)
                 const res = await fetch('/api/vision', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -171,7 +171,7 @@ function ChatContent() {
                     });
                 }
             } else {
-                // Text Request (Streaming)
+                // 텍스트 요청 (스트리밍)
                 const { keyword } = extractKeyword(queryMock);
                 const locationParam = location && location !== '위치 설정이 필요합니다' && location !== '위치 파악 실패'
                     ? `&loc=${encodeURIComponent(location)}`
@@ -190,7 +190,7 @@ function ChatContent() {
                 if (!reader) return;
 
                 const botMessageId = Date.now() + Math.random();
-                // Add initial empty bot message
+                // 초기 빈 봇 메시지 추가
                 addMessage({
                     id: botMessageId,
                     type: 'bot',
@@ -240,7 +240,7 @@ function ChatContent() {
     };
 
     const handleVoiceInput = () => {
-        setShowAttachMenu(false); // Close menu on selection
+        setShowAttachMenu(false); // 선택 시 메뉴 닫기
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
             return;
@@ -259,7 +259,7 @@ function ChatContent() {
         recognition.onresult = (event: any) => {
             const speechResult = event.results[0][0].transcript;
             setInput(speechResult);
-            sendMessage(speechResult); // Auto send/search
+            sendMessage(speechResult); // 자동 전송/검색
             setIsListening(false);
         };
 
@@ -269,7 +269,7 @@ function ChatContent() {
             if (event.error === 'not-allowed') {
                 alert("마이크 권한이 필요합니다. 브라우저 주소창 옆의 자물쇠 아이콘을 눌러 마이크 허용을 해주세요. 🎤");
             } else if (event.error === 'no-speech') {
-                // User didn't say anything, just reset silently or mild toast
+                // 사용자가 아무 말도 하지 않은 경우, 조용히 리셋하거나 가벼운 토스트 메시지 표시
             } else {
                 alert("음성 인식 오류: " + event.error);
             }

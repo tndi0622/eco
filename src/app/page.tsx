@@ -29,7 +29,7 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const saveRecentSearch = (term: string) => {
-    // Logic removed as per user request
+    // 사용자 요청에 따라 로직 제거됨
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +48,7 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
     }
-    // reset
+    // 초기화
     e.target.value = '';
   };
 
@@ -60,13 +60,13 @@ export default function Home() {
   }>({ status: 'loading', message: '정보를 불러오는 중...' });
 
   useEffect(() => {
-    // Check Splash Status (Use localStorage to prevent seeing it every tab open)
+    // 스플래시 상태 확인 (탭을 열 때마다 보이지 않도록 localStorage 사용)
     const hasSeenSplash = localStorage.getItem('hasSeenSplash');
 
-    // Check Onboarding Status
+    // 온보딩 상태 확인
     const hasOnboarded = localStorage.getItem('hasOnboarded');
 
-    // If already logged in, we can skip onboarding
+    // 이미 로그인된 경우 온보딩 건너뜀
     if (user && !hasOnboarded) {
       localStorage.setItem('hasOnboarded', 'true');
     }
@@ -76,7 +76,7 @@ export default function Home() {
       if (!hasOnboarded && !user) setShowOnboarding(true);
     } else {
       setShowSplash(true);
-      // Wait for splash animation (2.5s) then show onboarding if needed
+      // 스플래시 애니메이션(2.5초) 대기 후 필요한 경우 온보딩 표시
       if (!hasOnboarded && !user) {
         setTimeout(() => {
           setShowOnboarding(true);
@@ -85,12 +85,12 @@ export default function Home() {
     }
   }, [user]);
 
-  // Placeholder Logic
+  // 플레이스홀더 로직
   useEffect(() => {
     setSearchPlaceholder('배출 방법이 궁금한 물품을 입력해 주세요');
   }, []);
 
-  // Fetch Today's Recycle Info based on Location
+  // 위치 기반 오늘 재활용 정보 가져오기
   useEffect(() => {
     const fetchTodayRecycleInfo = async () => {
       if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
@@ -182,7 +182,7 @@ export default function Home() {
     fetchTodayRecycleInfo();
   }, [location]);
 
-  // Location Prompt & Toast Logic
+  // 위치 알림 및 토스트 로직
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [showToast, setShowToast] = useState(false);
 

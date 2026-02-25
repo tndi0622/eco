@@ -10,7 +10,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Year and month are required' }, { status: 400 });
     }
 
-    // Format month to 2 digits
+    // 월을 2자리로 포맷팅
     const solMonth = month.padStart(2, '0');
     const apiKey = process.env.DATA_GO_KR_API_KEY;
 
@@ -19,15 +19,11 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Server API Key missing. Please restart the server.' }, { status: 500 });
     }
 
-    // Determine if key needs encoding. 
-    // The provided key: c7c9950c1f91a266a3e39644a7febeac35730f42a49c79b07e676d84e4d1bbe1 
-    // Looks like it might NOT need standard URL encoding (no special chars like + or / or =).
-    // But usually, ServiceKey parameter expects the key.
-    // Let's try sending it as is. If that fails, we might need to double check.
-    // Actually, for data.go.kr, usually we use the "Decoding" key if we use a library that auto-encodes (like axios or fetch + URLSearchParams).
-    // If we construct the query string manually, we use "Encoding" key.
-    // Since we are appending it to a URL string manually (to be safe with special chars in official keys), we should handle it carefully.
-    // BUT, this key has NO special characters. So it is safe to just put in URL.
+    // 키의 인코딩 필요 여부 결정.
+    // 현재 키는 특수 문자(+, /, = 등)가 없으므로 표준 URL 인코딩은 필요하지 않아 보임.
+    // 하지만 데이터 공유 포털(data.go.kr)의 경우, 라이브러리가 자동 인코딩을 수행하면 'Decoding' 키를 사용하고,
+    // 직접 URL을 구성할 때는 'Encoding' 키를 사용하는 것이 일반적임.
+    // 이 키는 특수 문자가 없으므로 그냥 URL에 포함해도 안전함.
 
     const apiUrl = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${apiKey}&solYear=${year}&solMonth=${solMonth}&numOfRows=100`;
 
@@ -35,12 +31,12 @@ export async function GET(request: Request) {
         const response = await fetch(apiUrl);
         const text = await response.text();
 
-        console.log(`API Call to: ${apiUrl}`); // Debugging
+        console.log(`API Call to: ${apiUrl}`); // 디버깅
         // console.log(`Response: ${text.substring(0, 200)}...`); 
 
         const result = await parseStringPromise(text, { explicitArray: false, ignoreAttrs: true });
 
-        // Check for service error
+        // 서비스 에러 확인
         if (result.OpenAPI_ServiceResponse?.cmmMsgHeader?.errMsg) {
             console.error('OpenAPI Error:', result.OpenAPI_ServiceResponse.cmmMsgHeader.errMsg);
             return NextResponse.json({ error: 'OpenAPI Error', details: result.OpenAPI_ServiceResponse.cmmMsgHeader }, { status: 500 });
@@ -52,7 +48,7 @@ export async function GET(request: Request) {
         }
 
         let items = body.items.item;
-        // Normalize to array if single item
+        // 단일 항목인 경우 배열로 정규화
         if (!Array.isArray(items)) {
             items = [items];
         }

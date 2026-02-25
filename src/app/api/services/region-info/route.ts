@@ -4,8 +4,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const location = searchParams.get('loc') || '서울시 종로구';
 
-    // Simulate fetching regional waste discharge guidelines based on location
-    // Real API: Local Government specific APIs
+    // 위치에 따른 지역별 폐기물 배출 가이드라인 가져오기 시뮬레이션
+    // 실무 API: 지자체별 API
 
     const mockRegionData = {
         response: {
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
             },
             body: {
                 item: {
-                    regionName: location, // Reflect the requested location
+                    regionName: location, // 요청된 위치 반영
                     generalWaste: {
                         days: "일, 화, 목",
                         time: "18:00 ~ 24:00",

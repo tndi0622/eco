@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         const genAI = new GoogleGenerativeAI(geminiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-        // --- Step 1: Identify the Item ---
+        // --- 1단계: 아이템 식별 ---
         const identificationPrompt = `
             Analyze this image and identify the main waste item.
             Return ONLY the single specific name of the item in Korean (e.g., "소파", "침대", "건전지", "투명페트병").
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         const identifiedItem = idResult.response.text().trim();
         const query = identifiedItem;
 
-        // --- Step 2: Fetch Public Data (Parallel) ---
+        // --- 2단계: 공공데이터 가져오기 (병렬) ---
 
         const parseLocation = (loc: string | null) => {
             if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         let foodWasteItems: any[] = foodWasteResult.status === 'fulfilled' ? foodWasteResult.value : [];
         let wasteInfoItems: any[] = [];
 
-        // Local Data (Supabase/JSON)
+        // 로컬 데이터 (Supabase/JSON)
         if (sido) {
             try {
                 if (supabase) {
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
                 if (wasteInfoItems.length === 0) {
                     wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido) && rule.sigungu.includes(sigungu));
                 }
-                // Sort by Dong
+                // 동(Dong)별로 정렬
                 if (dong && wasteInfoItems.length > 1) {
                     wasteInfoItems.sort((a, b) => {
                         const aName = a.emdNm || '';
@@ -174,8 +174,8 @@ export async function POST(request: Request) {
         }
 
 
-        // --- Step 3: Final Answer ---
-        // Context Building
+        // --- 3단계: 최종 답변 ---
+        // 컨텍스트 구축
         const methodContext = publicDataItems.map(item => `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`).join('\n');
         const largeWasteContext = largeWasteItems.map(item => `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`).join('\n');
         const wasteBagContext = wasteBagItems.map(item => `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`).join('\n');

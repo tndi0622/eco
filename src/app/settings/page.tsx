@@ -20,11 +20,10 @@ export default function Settings() {
     const [editTarget, setEditTarget] = useState<{ name: string, address: string } | null>(null);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-    // Close menu when clicking outside
-    // Close menu when clicking outside
+    // 외부 클릭 시 메뉴 닫기
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            // Check if click is inside a menu container using data attribute
+            // 데이터 속성을 사용하여 클릭이 메뉴 컨테이너 내부인지 확인
             if ((e.target as Element).closest('[data-menu-container]')) return;
             setOpenMenu(null);
         };
@@ -46,7 +45,7 @@ export default function Settings() {
         food: '정보 확인 중...'
     });
 
-    // Load Notification Settings
+    // 알림 설정 로드
     useEffect(() => {
         const saved = localStorage.getItem('notificationSettings');
         if (saved) {
@@ -60,21 +59,21 @@ export default function Settings() {
         localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
     };
 
-    // Fetch Contact Info & Rules based on Current Location (Active Address)
+    // 현재 위치(활성 주소)를 기반으로 연락처 정보 및 규칙 가져오기
     useEffect(() => {
         const fetchInfo = async () => {
-            // Default State
+            // 기본 상태
             const defaultContact = { name: '다산콜센터 (생활민원)', phone: '120' };
             const defaultScheduler = { general: '정보 없음', recycle: '정보 없음', food: '정보 없음' };
 
-            // If location is not set or invalid
+            // 위치가 설정되지 않았거나 유효하지 않은 경우
             if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
                 setContactInfo(defaultContact);
                 setWasteScheduler(defaultScheduler);
                 return;
             }
 
-            // Parse location string (e.g., "서울특별시 마포구 ...")
+            // 위치 문자열 파싱 (예: "서울특별시 마포구 ...")
             const parts = location.split(' ');
             const sido = parts[0];
             const sigungu = parts[1];
@@ -93,19 +92,19 @@ export default function Settings() {
                 if (data.rules && data.rules.length > 0) {
                     const rule = data.rules[0];
 
-                    // 1. Set Contact Info
+                    // 1. 연락처 정보 설정
                     if (rule.contact) {
                         setContactInfo({ name: `${sigungu} 청소행정과`, phone: rule.contact });
                     } else {
                         setContactInfo(defaultContact);
                     }
 
-                    // 2. Set Scheduler Info
-                    // Helper to format: "매일 19:00" or "화,목 전날 20:00"
+                    // 2. 스케줄러 정보 설정
+                    // 포맷 헬퍼: "매일 19:00" 또는 "화,목 전날 20:00"
                     const formatSchedule = (days: string, time: string) => {
                         if (!days) return '정보 없음';
-                        const cleanTime = time ? time.split('~')[0].trim() : '19:00'; // Take start time
-                        // Assuming time format is like "18:00~24:00" -> "18:00"
+                        const cleanTime = time ? time.split('~')[0].trim() : '19:00'; // 시작 시간 가져오기
+                        // 시간 형식이 "18:00~24:00"인 것으로 가정 -> "18:00"
 
                         if (days.includes('매일')) return `매일 ${cleanTime} 알림`;
                         return `${days} 전날 ${cleanTime} 알림`;
@@ -134,7 +133,7 @@ export default function Settings() {
     const handleAddressPicked = (addr: string) => {
         setPendingAddress(addr);
         setShowAddressSearch(false);
-        // Only clear name if adding new (not editing)
+        // 새로 추가하는 경우에만 이름 초기화 (수정 아님)
         if (!editTarget) {
             setNewName('');
         }
@@ -144,15 +143,15 @@ export default function Settings() {
     const handleDetectLocation = async () => {
         const { address, error } = await detectLocation();
         if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
-            handleAddressPicked(address); // Proceed to name modal with detected address
+            handleAddressPicked(address); // 감지된 주소로 이름 모달 진행
         } else {
-            alert(address || error || "위치 확인 실패"); // Show error message
+            alert(address || error || "위치 확인 실패"); // 에러 메시지 표시
         }
     };
 
     const handleEditClick = (fav: any, e: React.MouseEvent) => {
         e.stopPropagation();
-        setOpenMenu(null); // Close menu
+        setOpenMenu(null); // 메뉴 닫기
         setEditTarget(fav);
         setNewName(fav.name);
         setPendingAddress(fav.address);
@@ -167,19 +166,19 @@ export default function Settings() {
         }
 
         if (editTarget) {
-            // Update existing
+            // 기존 항목 업데이트
             updateFavorite(editTarget.name, newName, pendingAddress);
             setEditTarget(null);
         } else {
-            // Add new
+            // 새로 추가
             addFavorite(newName, pendingAddress);
         }
 
-        // Automatically set as active location (both add and edit)
+        // 자동으로 활성 위치로 설정 (추가 및 수정 모두)
         promoteFavorite(newName);
 
         setShowNameModal(false);
-        // Reload to refresh context across app immediately
+        // 앱 전체에 컨텍스트를 즉시 반영하기 위해 새로고침
         setTimeout(() => {
             window.location.reload();
         }, 100);
@@ -193,13 +192,13 @@ export default function Settings() {
 
     const handleLocationSelect = (fav: any) => {
         promoteFavorite(fav.name);
-        // Force reload as requested to ensure all standard/admin info updates reflect immediately
+        // 일반/관리자 정보 업데이트가 즉시 반영되도록 요청에 따라 강제 새로고침
         setTimeout(() => {
             window.location.reload();
         }, 100);
     };
 
-    // Toggle Switch Component
+    // 토글 스위치 컴포넌트
     const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
         <div className={styles.switch} onClick={onClick}>
             <input type="checkbox" checked={active} readOnly />
@@ -276,8 +275,8 @@ export default function Settings() {
                                         <button
                                             className={`${styles.menuBtn} ${openMenu === fav.name ? styles.active : ''}`}
                                             onClick={(e) => {
-                                                e.stopPropagation(); // Stop click from reaching parent card
-                                                // Toggle menu
+                                                e.stopPropagation(); // 부모 카드로 클릭 이벤트가 전달되지 않도록 중지
+                                                // 메뉴 토글
                                                 setOpenMenu(prev => prev === fav.name ? null : fav.name);
                                             }}
                                             title="설정"

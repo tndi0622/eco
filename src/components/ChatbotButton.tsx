@@ -18,7 +18,7 @@ export default function ChatbotButton() {
                 alt="Chatbot"
                 className={styles.icon}
                 onError={(e) => {
-                    // Fallback if image not yet loaded by user
+                    // 유저가 이미지를 아직 로드하지 않은 경우의 폴백 처리
                     e.currentTarget.style.display = 'none';
                 }}
             />

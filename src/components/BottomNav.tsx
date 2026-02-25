@@ -52,7 +52,7 @@ export default function BottomNav() {
                 <Link
                     key={item.path}
                     href={item.path}
-                    prefetch={false} // Prevent preloading unused page resources
+                    prefetch={false} // 사용하지 않는 페이지 리소스의 사전 로드를 방지
                     className={`${styles.item} ${pathname === item.path ? styles.active : ''}`}
                 >
                     {item.icon}

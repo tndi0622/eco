@@ -4,7 +4,7 @@ import { useState } from 'react';
 import styles from './EcoDashboard.module.css';
 
 export default function EcoDashboard() {
-    // Shared state (mock for now, ideally in context)
+    // 레벨/에코 스코어 관리 (현재 수동, 추후 서버 연동)
     const [ecoScore, setEcoScore] = useState(300);
     const [level, setLevel] = useState(1);
     const [showHistory, setShowHistory] = useState(false);
@@ -42,7 +42,7 @@ export default function EcoDashboard() {
                 <div className={styles.progressText}>내가 얼마나 지구를 도왔는지 보기 👉</div>
             </section>
 
-            {/* History Modal */}
+            {/* 내역 모달 */}
             {showHistory && (
                 <div className={styles.historyModalOverlay} onClick={toggleHistory}>
                     <div className={styles.historyCard} onClick={(e) => e.stopPropagation()}>

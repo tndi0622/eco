@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // 2. Photon 실패 시 Nominatim 시도 (User-Agent 포함하여 차단 우회)
+        // 2. Photon 실패 시 Nominatim 시도 (User-Agent를 포함하여 차단 우회)
         const nominatimRes = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ko`,
             {

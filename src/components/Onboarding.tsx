@@ -17,7 +17,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         {
             title: "이사 온 첫날,\n쓰레기 배출 막막하시죠?",
             desc: "지역마다 다른 배출 요일과 방법,\n에코도우미가 싹- 정리해드릴게요.",
-            image: "🗑️", // Placeholder for actual image
+            image: "🗑️", // 실제 이미지의 플레이스홀더
             btnText: "다음으로"
         },
         {
@@ -36,24 +36,24 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
     const handleNext = async () => {
         if (step === 1) {
-            // Location Step
+            // 위치 설정 단계
             setIsLoading(true);
             const { address, coordinates, error } = await detectLocation();
             setIsLoading(false);
 
             if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
-                // Success - Save as '우리 집' automatically
-                // Passing coordinates ensures weather/map features work better if added later
+                // 성공 - 자동으로 '우리 집'으로 저장
+                // 좌표를 전달하면 나중에 날씨/지도 기능 추가 시 더 잘 작동함
                 addFavorite("우리 집", address, coordinates || undefined);
                 setStep(step + 1);
             } else {
-                // Fail - Just move next (fallback to manual settings later)
+                // 실패 - 다음으로 이동 (나중에 수동 설정으로 폴백)
                 alert("위치 확인에 실패했습니다. 나중에 설정에서 직접 등록해주세요.");
                 setStep(step + 1);
             }
         } else if (step === 2) {
-            // Final Step
-            // Disable notifications by default for new users
+            // 마지막 단계
+            // 새 사용자의 알림을 기본적으로 비활성화함
             const defaultSettings = { general: false, recycle: false, food: false };
             localStorage.setItem('notificationSettings', JSON.stringify(defaultSettings));
             onComplete();

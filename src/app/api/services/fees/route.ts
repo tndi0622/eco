@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-    // In a real scenario, this would fetch from:
+    // 실제 시나리오에서는 다음에서 데이터를 가져옵니다:
     // https://apis.data.go.kr/SpecificLocalGov/LargeWasteFeeService/getFeeList
 
-    // For now, we simulate a standard Public Data Portal JSON response structure
+    // 현재는 표준 공공데이터 포털 JSON 응답 구조를 시뮬레이션합니다.
     const mockPublicData = {
         response: {
             header: {
