@@ -215,7 +215,7 @@ export async function POST(request: Request) {
                "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"
             5. 이모지는 문장 끝에만 사용해주세요.
             
-            **전체 답변을 최대 4~5문장 이내로 매우 간결하게 작성하세요.**
+            **전체 답변을 최대 8~10문장 이내로 매우 간결하게 작성하세요.**
         `;
 
         const finalResult = await model.generateContent([finalPrompt, imagePart]);
