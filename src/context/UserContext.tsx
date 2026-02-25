@@ -24,6 +24,9 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 declare global {
     interface Window {
+        flutter_inappwebview?: {
+            callHandler: (handlerName: string, ...args: any[]) => Promise<any>;
+        };
         FlutterLoginChannel?: {
             postMessage: (message: string) => void;
         };
@@ -76,6 +79,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 console.error("Native Login Exception:", err);
             }
         };
+
+        // Signal that the webview is ready for the app to pass tokens
+        if (window.flutter_inappwebview) {
+            window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'webViewReady');
+        }
 
         return () => {
             subscription.unsubscribe();
@@ -131,6 +139,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (!supabase) return;
 
         // Flutter Native Login check
+        if (window.flutter_inappwebview) {
+            window.flutter_inappwebview.callHandler('FlutterLoginChannel', 'googleLogin');
+            return;
+        }
+
         if (window.FlutterLoginChannel) {
             window.FlutterLoginChannel.postMessage('googleLogin');
             return;
