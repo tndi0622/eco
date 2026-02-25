@@ -1,6 +1,5 @@
 'use client';
 
-
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -16,20 +15,40 @@ export default function Home() {
   const [showSplash, setShowSplash] = useState<boolean | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [searchInput, setSearchInput] = useState('');
-  const [searchPlaceholder, setSearchPlaceholder] = useState('예: 깨진 유리, 매트리스');
   const { location } = useLocation();
   const { user, loginWithGoogle } = useUser();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // 스플래시 상태 확인
+    const hasSeenSplash = localStorage.getItem('hasSeenSplash');
+    // 온보딩 상태 확인
+    const hasOnboarded = localStorage.getItem('hasOnboarded');
+
+    if (user && !hasOnboarded) {
+      localStorage.setItem('hasOnboarded', 'true');
+    }
+
+    if (hasSeenSplash) {
+      setShowSplash(false);
+      if (!hasOnboarded && !user) setShowOnboarding(true);
+    } else {
+      setShowSplash(true);
+      if (!hasOnboarded && !user) {
+        setTimeout(() => setShowOnboarding(true), 2500);
+      }
+    }
+  }, [user]);
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('hasOnboarded', 'true');
     setShowOnboarding(false);
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const saveRecentSearch = (term: string) => {
-    // 사용자 요청에 따라 로직 제거됨
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    localStorage.setItem('hasSeenSplash', 'true');
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,161 +67,28 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
     }
-    // 초기화
     e.target.value = '';
   };
 
-  const [todayRecycleStatus, setTodayRecycleStatus] = useState<{
-    status: 'loading' | 'success' | 'error' | 'empty';
-    message: string;
-    items?: string;
-    time?: string;
-  }>({ status: 'loading', message: '정보를 불러오는 중...' });
-
-  useEffect(() => {
-    // 스플래시 상태 확인 (탭을 열 때마다 보이지 않도록 localStorage 사용)
-    const hasSeenSplash = localStorage.getItem('hasSeenSplash');
-
-    // 온보딩 상태 확인
-    const hasOnboarded = localStorage.getItem('hasOnboarded');
-
-    // 이미 로그인된 경우 온보딩 건너뜀
-    if (user && !hasOnboarded) {
-      localStorage.setItem('hasOnboarded', 'true');
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      router.push(`/chat?q=${encodeURIComponent(searchInput)}`);
     }
-
-    if (hasSeenSplash) {
-      setShowSplash(false);
-      if (!hasOnboarded && !user) setShowOnboarding(true);
-    } else {
-      setShowSplash(true);
-      // 스플래시 애니메이션(2.5초) 대기 후 필요한 경우 온보딩 표시
-      if (!hasOnboarded && !user) {
-        setTimeout(() => {
-          setShowOnboarding(true);
-        }, 2500);
-      }
-    }
-  }, [user]);
-
-  // 플레이스홀더 로직
-  useEffect(() => {
-    setSearchPlaceholder('배출 방법이 궁금한 물품을 입력해 주세요');
-  }, []);
-
-  // 위치 기반 오늘 재활용 정보 가져오기
-  useEffect(() => {
-    const fetchTodayRecycleInfo = async () => {
-      if (!location || location === '위치 설정이 필요합니다' || location === '위치 파악 실패') {
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '위치를 설정하면 알려드려요'
-        });
-        return;
-      }
-
-      const parts = location.split(' ');
-      const sido = parts[0];
-      const sigungu = parts[1];
-      const dong = parts[2];
-
-      if (!sido || !sigungu) {
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '위치 정보가 불확실해요'
-        });
-        return;
-      }
-
-      try {
-        setTodayRecycleStatus({ status: 'loading', message: '정보 확인 중...' });
-
-        const query = `/api/waste-rules?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}&dong=${encodeURIComponent(dong || '')}`;
-        const res = await fetch(query);
-
-        if (!res.ok) throw new Error('Network response was not ok');
-
-        const data = await res.json();
-
-        if (data.rules && data.rules.length > 0) {
-          const todayChar = new Date().toLocaleDateString('ko-KR', { weekday: 'short' });
-
-          let todayItems: string[] = [];
-          let timeInfo = '';
-
-          data.rules.forEach((rule: any) => {
-            const isToday = (dayStr: string) => dayStr && (dayStr.includes(todayChar) || dayStr.includes('매일'));
-
-            if (isToday(rule.gnrlWsteDschrgDay)) {
-              todayItems.push('일반쓰레기');
-              if (!timeInfo && rule.gnrlWsteDschrgTime) timeInfo = rule.gnrlWsteDschrgTime;
-            }
-            if (isToday(rule.foodWsteDschrgDay)) {
-              todayItems.push('음식물');
-              if (!timeInfo && rule.foodWsteDschrgTime) timeInfo = rule.foodWsteDschrgTime;
-            }
-            if (isToday(rule.recycleDschrgDay)) {
-              todayItems.push('재활용');
-              if (!timeInfo && rule.recycleDschrgTime) timeInfo = rule.recycleDschrgTime;
-            }
-          });
-
-          todayItems = [...new Set(todayItems)];
-
-          if (todayItems.length > 0) {
-            setTodayRecycleStatus({
-              status: 'success',
-              message: '오늘 배출 가능',
-              items: todayItems.join(', '),
-              time: timeInfo ? timeInfo.replace('~', ' ~ ') : '18:00 ~ 24:00'
-            });
-          } else {
-            setTodayRecycleStatus({
-              status: 'empty',
-              message: '오늘은 배출일이 아닙니다'
-            });
-          }
-        } else {
-          setTodayRecycleStatus({
-            status: 'error',
-            message: '관할 구청 데이터 없음',
-            items: '기본 정보 참고',
-            time: '18:00 ~ 24:00'
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch waste rules", error);
-        setTodayRecycleStatus({
-          status: 'error',
-          message: '정보를 불러올 수 없어요'
-        });
-      }
-    };
-
-    fetchTodayRecycleInfo();
-  }, [location]);
-
-  // 위치 알림 및 토스트 로직
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-
-  useEffect(() => {
-    if (!location || location === '위치 설정이 필요합니다') {
-      setShowLocationPrompt(true);
-      const timer = setTimeout(() => {
-        setShowToast(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    } else {
-      setShowLocationPrompt(false);
-      setShowToast(false);
-    }
-  }, [location]);
-
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-    localStorage.setItem('hasSeenSplash', 'true');
   };
+
+  const handleVoiceSearch = () => {
+    router.push('/chat?mode=voice');
+  };
+
+  const largeWasteExamples = [
+    { name: '매트리스', icon: '🛏️' },
+    { name: '소파', icon: '🛋️' },
+    { name: '책상', icon: '📝' },
+    { name: '냉장고', icon: '❄️' },
+    { name: '자전거', icon: '🚲' },
+    { name: '캐리어', icon: '🧳' }
+  ];
 
   if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
 
@@ -231,8 +117,8 @@ export default function Home() {
           <div className={styles.loginLogo}>♻️</div>
           <h2 className={styles.loginTitle}>에코 시작하기</h2>
           <p className={styles.loginDesc}>
-            우리 동네 배출 일정을 확인하고<br />
-            분리배출 고민을 한 번에 해결하세요!
+            대형폐기물 배출 고민을 한 번에 해결하세요!<br />
+            가구, 가전 수수료 정보를 바로 알려드려요.
           </p>
           <button className={styles.googleLoginBtn} onClick={loginWithGoogle}>
             <svg className={styles.googleIconSvg} viewBox="0 0 24 24" width="20" height="20">
@@ -248,34 +134,15 @@ export default function Home() {
     );
   }
 
-  const handleVoiceSearch = () => {
-    router.push('/chat?mode=voice');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      saveRecentSearch(searchInput.trim());
-      router.push(`/chat?q=${encodeURIComponent(searchInput)}`);
-    }
-  };
-
   return (
     <div className={styles.containerMinimal}>
       <div className={styles.contentWrapper}>
         <section className={styles.heroEntry}>
-          <img src="/images/eco_mascot_question.png" alt="Mascot" className={styles.heroMascot} />
+          <img src="/images/eco_mascot_idea.png" alt="Mascot" className={styles.heroMascot} />
           <h1 className={styles.heroTitleMinimal}>
-            버리기 헷갈릴 때,<br />
-            <span className={styles.highlight}>바로 알려드려요</span>
+            대형폐기물,<br />
+            <span className={styles.highlight}>어떻게 버릴까요?</span>
           </h1>
-
-          {showLocationPrompt && (
-            <div style={{ fontSize: '0.85rem', color: '#ff5252', marginTop: '-0.5rem', marginBottom: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div className={styles.locationPrompt}></div>
-              지금 위치를 설정해보세요!
-            </div>
-          )}
 
           <form onSubmit={handleSearch} className={styles.searchFormMinimal}>
             <button type="button" className={styles.iconBtnLeft} onClick={() => fileInputRef.current?.click()}>
@@ -284,7 +151,7 @@ export default function Home() {
                 <circle cx="12" cy="13" r="4"></circle>
               </svg>
             </button>
-            <input type="text" className={styles.inputMinimal} placeholder={searchPlaceholder} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+            <input type="text" className={styles.inputMinimal} placeholder="가구나 가전제품 이름을 입력하세요" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
             <button type="button" className={styles.iconBtnRight} onClick={handleVoiceSearch}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -301,47 +168,30 @@ export default function Home() {
             </button>
           </form>
 
-          {/* 검색어 섹션 제거됨 */}
-
           <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </section>
 
-        <section className={styles.todayContext}>
-          <div className={styles.contextLabel}>오늘의 배출</div>
-          {todayRecycleStatus.status === 'loading' && <div className={styles.contextValue} style={{ color: '#999' }}>정보를 불러오는 중...</div>}
-          {todayRecycleStatus.status === 'success' && (
-            <>
-              <div className={styles.contextValue}>{todayRecycleStatus.items}</div>
-              <div className={styles.contextTime}>{todayRecycleStatus.time}</div>
-            </>
-          )}
-          {todayRecycleStatus.status === 'empty' && <div className={styles.contextValue} style={{ color: '#666' }}>{todayRecycleStatus.message}</div>}
-          {todayRecycleStatus.status === 'error' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div className={styles.contextValue} style={{ color: '#FF5252' }}>{todayRecycleStatus.message}</div>
-              {todayRecycleStatus.items && <div style={{ fontSize: '0.8rem', color: '#999' }}>{todayRecycleStatus.items}</div>}
-            </div>
-          )}
+        <section className={styles.recommendSection}>
+          <div className={styles.recommendTitle}>
+            <span>자주 찾는 대형폐기물 🔎</span>
+          </div>
+          <div className={styles.chipContainer}>
+            {largeWasteExamples.map((item, idx) => (
+              <button
+                key={idx}
+                className={styles.chip}
+                onClick={() => router.push(`/chat?q=${encodeURIComponent(item.name)}`)}
+              >
+                <span>{item.icon}</span> {item.name}
+              </button>
+            ))}
+          </div>
         </section>
 
-        {/* 광고 섹션 예시 (실제 슬롯 ID가 생기면 dataAdSlot을 수정해 주세요) */}
         <section style={{ marginTop: '30px' }}>
           <div style={{ fontSize: '0.7rem', color: '#ccc', textAlign: 'center', marginBottom: '4px' }}>ADVERTISEMENT</div>
           <AdBanner dataAdSlot="YOUR_AD_SLOT_ID" />
         </section>
-      </div>
-
-      <div className={`${styles.toast} ${showToast ? styles.show : ''}`} onClick={() => router.push('/settings')}>
-        <div className={styles.toastContent}>
-          <span className={styles.toastIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-          </span>
-          <span className={styles.toastText}>동네를 설정하면 배출요일을 알려드려요!</span>
-        </div>
-        <button className={styles.toastClose} onClick={(e) => { e.stopPropagation(); setShowToast(false); }}>×</button>
       </div>
     </div>
   );

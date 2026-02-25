@@ -37,8 +37,6 @@ export default function BottomNav() {
     const navItems = [
         { name: '홈', path: '/', icon: <HomeIcon /> },
         { name: '채팅', path: '/chat', icon: <ChatIcon /> },
-        { name: '캘린더', path: '/calendar', icon: <CalendarIcon /> },
-
         { name: '설정', path: '/settings', icon: <SettingsIcon /> },
     ];
 
