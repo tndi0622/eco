@@ -22,6 +22,15 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+declare global {
+    interface Window {
+        FlutterLoginChannel?: {
+            postMessage: (message: string) => void;
+        };
+        handleNativeGoogleLogin?: (idToken: string, accessToken: string) => void;
+    }
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [tokens, setTokens] = useState<number>(1);
@@ -44,7 +53,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        // Native Google Login Handler
+        window.handleNativeGoogleLogin = async (idToken: string, accessToken: string) => {
+            console.log("Received native token from Flutter");
+            if (!supabase) return;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                    provider: 'google',
+                    token: idToken,
+                    access_token: accessToken,
+                });
+
+                if (error) {
+                    console.error("Native Login Error:", error.message);
+                    alert("로그인 중 오류가 발생했습니다.");
+                } else if (data.user) {
+                    console.log("Native Login Success:", data.user.email);
+                    // Force a local state update if needed, though onAuthStateChange should handle it
+                }
+            } catch (err) {
+                console.error("Native Login Exception:", err);
+            }
+        };
+
+        return () => {
+            subscription.unsubscribe();
+            delete window.handleNativeGoogleLogin;
+        };
     }, []);
 
     const handleUserChange = (newUser: User | null) => {
@@ -93,6 +129,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     const loginWithGoogle = async () => {
         if (!supabase) return;
+
+        // Flutter Native Login check
+        if (window.FlutterLoginChannel) {
+            window.FlutterLoginChannel.postMessage('googleLogin');
+            return;
+        }
+
         const origin = window.location.origin;
         await supabase.auth.signInWithOAuth({
             provider: 'google',
