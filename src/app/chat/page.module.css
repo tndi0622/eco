@@ -263,7 +263,7 @@
 
 .inputArea {
     position: fixed;
-    bottom: max(5.2rem, calc(72px + env(safe-area-inset-bottom)));
+    bottom: calc(58px + max(0.8rem, env(safe-area-inset-bottom)));
     /* Positioned above BottomNav */
     left: 50%;
     transform: translateX(-50%);
