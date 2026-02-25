@@ -1,0 +1,329 @@
+.storeModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.storeModalSheet {
+    background-color: #F9FAFB;
+    width: 100%;
+    height: 92%;
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+    padding-bottom: 5rem;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+    animation: slideUpSheet 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpSheet {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.storeModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 0;
+    background-color: #F9FAFB;
+    z-index: 10;
+    padding-bottom: 0.5rem;
+}
+
+.storeModalTitle {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #222;
+}
+
+.closeStoreBtn {
+    background: #EEE;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.storeModalContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.userStatus {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #E0E0E0;
+}
+
+.statusLeft {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.statusItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.statusLabel {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.statusValue {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #1e293b;
+}
+
+.tokenCostTable {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    border: 1px solid #E5E7EB;
+    margin-bottom: 0.5rem;
+}
+
+.costItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.costItem span:last-child {
+    color: #27AE60;
+    font-weight: 900;
+}
+
+.premiumCard {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    padding: 1.5rem;
+    border-radius: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+}
+
+.premiumCard::after {
+    content: '✨';
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 5rem;
+    opacity: 0.1;
+}
+
+.premiumHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.premiumBadge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+}
+
+.premiumTitle {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.premiumDesc {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 1.2rem;
+    line-height: 1.5;
+}
+
+.subscribeBtn {
+    background-color: white;
+    color: #059669;
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.unsubscribeBtn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    transition: all 0.2s;
+}
+
+.unsubscribeBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
+.freeTokenSection {
+    background-color: white;
+    padding: 1rem 1.2rem;
+    border-radius: 18px;
+    border: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.freeTokenInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.freeTokenTitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4B5563;
+}
+
+.freeTokenCount {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    background: #F3F4F6;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.adBtnSmall {
+    background-color: #374151;
+    color: white;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.adBtnSmall:hover:not(:disabled) {
+    background-color: #1F2937;
+    transform: translateY(-1px);
+}
+
+.adBtnSmall:disabled {
+    background-color: #E5E7EB;
+    color: #9CA3AF;
+    cursor: not-allowed;
+}
+
+.storeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bundleCard {
+    background-color: white;
+    padding: 1.2rem;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    border: 1px solid #E0E0E0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.bundleCard:active {
+    transform: scale(0.98);
+}
+
+.bundleInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.bundleName {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #222;
+}
+
+.bundlePrice {
+    font-size: 0.9rem;
+    color: #27AE60;
+    font-weight: 700;
+}
+
+.buyBtn {
+    background-color: #27AE60;
+    color: white;
+    padding: 0.7rem 1.2rem;
+    border-radius: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}

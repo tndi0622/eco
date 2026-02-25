@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import styles from './Header.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
+import StoreModal from './StoreModal';
 
 export default function Header() {
   const { location, setLocation, detectLocation, isLoading, favorites, addFavorite, promoteFavorite } = useLocation();
   const { user, tokens, isSubscribed } = useUser();
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
 
   if (!user) return null;
   const [isAddingBookmark, setIsAddingBookmark] = useState(false);
@@ -59,11 +61,15 @@ export default function Header() {
           </svg>
         </div>
 
-        <div className={styles.tokenBadge} onClick={() => router.push('/settings')}>
+        <div className={styles.tokenBadge} onClick={() => setShowStoreModal(true)}>
           <span>💎</span>
           <span>{isSubscribed ? '무제한' : `${tokens}개`}</span>
         </div>
       </header>
+
+      {showStoreModal && (
+        <StoreModal onClose={() => setShowStoreModal(false)} />
+      )}
 
       {showDetails && (
         <div className={styles.popoverOverlay} onClick={() => setShowDetails(false)}>
