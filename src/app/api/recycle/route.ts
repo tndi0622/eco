@@ -201,127 +201,142 @@ export async function GET(request: Request) {
 
     // 2. Gemini 사용
     if (geminiKey) {
-        try {
-            const genAI = new GoogleGenerativeAI(geminiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        const availableModels = ["gemini-2.0-flash", "gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
-            // 오늘 정보 계산 (KST)
-            const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const kstGap = 9 * 60 * 60 * 1000;
-            const todayKST = new Date(utc + kstGap);
+        let result: any = null;
+        let lastError: any = null;
 
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const dayName = days[todayKST.getDay()];
-            const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
-            const timeStr = `${todayKST.getHours()}시 ${todayKST.getMinutes()}분`;
+        const genAI = new GoogleGenerativeAI(geminiKey);
 
-            const methodContext = publicDataItems.map(item =>
-                `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`
-            ).join('\n');
+        for (const modelName of availableModels) {
+            try {
+                const model = genAI.getGenerativeModel({ model: modelName });
 
-            const placeContext = collectionPointItems.map(item =>
-                `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`
-            ).join('\n');
+                // 오늘 정보 계산 (KST)
+                const now = new Date();
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+                const kstGap = 9 * 60 * 60 * 1000;
+                const todayKST = new Date(utc + kstGap);
 
-            const largeWasteContext = largeWasteItems.map(item =>
-                `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`
-            ).join('\n');
+                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                const dayName = days[todayKST.getDay()];
+                const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
+                const timeStr = `${todayKST.getHours()}시 ${todayKST.getMinutes()}분`;
 
-            const wasteBagContext = wasteBagItems.map(item =>
-                `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`
-            ).join('\n');
+                const methodContext = publicDataItems.map(item =>
+                    `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`
+                ).join('\n');
 
-            const foodWasteContext = foodWasteItems.map(item =>
-                `- [음식물납부필증] 지역: ${item.ctpvNm} ${item.sggNm}, 유형: ${item.foodTrashPayCertTypeNm}, 대상: ${item.useTrgtNm}, 용량: ${item.foodTrashCpcty}, 가격: ${item.price}원`
-            ).join('\n');
+                const placeContext = collectionPointItems.map(item =>
+                    `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`
+                ).join('\n');
 
-            const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
-                `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`
-            ).join('\n');
+                const largeWasteContext = largeWasteItems.map(item =>
+                    `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`
+                ).join('\n');
 
-            const prompt = `
-                당신은 재활용 및 분리배출을 돕는 친절한 환경 마스코트 '에코'입니다.
-                
-                [현재 상황]
-                - 사용자의 질문: "${query}"
-                - 사용자의 현재 위치: ${location || '알 수 없음'} (${sido} ${sigungu})
-                - **현재 시각: ${dateStr} ${timeStr}** (이 시간을 기준으로 "오늘", "내일", "지금" 배출 가능 여부를 판단하세요)
+                const wasteBagContext = wasteBagItems.map(item =>
+                    `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`
+                ).join('\n');
 
-                [1. 공공데이터: 분리배출 방법 (핵심 - 배출 방법)]
-                ${methodContext || "관련 데이터 없음"}
+                const foodWasteContext = foodWasteItems.map(item =>
+                    `- [음식물납부필증] 지역: ${item.ctpvNm} ${item.sggNm}, 유형: ${item.foodTrashPayCertTypeNm}, 대상: ${item.useTrgtNm}, 용량: ${item.foodTrashCpcty}, 가격: ${item.price}원`
+                ).join('\n');
 
-                [2. 공공데이터: 대형폐기물 수수료 (핵심 - 대형일 경우)]
-                ${largeWasteContext || "관련 데이터 없음 (대형폐기물이 아닐 수 있음)"}
+                const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
+                    `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`
+                ).join('\n');
 
-                [3. 공공데이터: 종량제봉투/납부필증 가격 (핵심 - 가격 문의 시)]
-                ${wasteBagContext || ""}
-                ${foodWasteContext || ""}
+                const prompt = `
+                    당신은 재활용 및 분리배출을 돕는 친절한 환경 마스코트 '에코'입니다.
+                    
+                    [현재 상황]
+                    - 사용자의 질문: "${query}"
+                    - 사용자의 현재 위치: ${location || '알 수 없음'} (${sido} ${sigungu})
+                    - **현재 시각: ${dateStr} ${timeStr}** (이 시간을 기준으로 "오늘", "내일", "지금" 배출 가능 여부를 판단하세요)
 
-                [4. 공공데이터: 수거/회수처 (참고용 - 장소)]
-                ${placeContext || "관련 데이터 없음"}
+                    [1. 공공데이터: 분리배출 방법 (핵심 - 배출 방법)]
+                    ${methodContext || "관련 데이터 없음"}
 
-                [5. 로컬데이터: 우리 동네 배출 규칙 (핵심 - 시간/요일)]
-                ${ruleContext || "지역 배출 규칙 데이터 없음"}
+                    [2. 공공데이터: 대형폐기물 수수료 (핵심 - 대형일 경우)]
+                    ${largeWasteContext || "관련 데이터 없음 (대형폐기물이 아닐 수 있음)"}
 
-                [지시사항]
-                1. **핵심 정보 위주로 간결하게 요약**하여 답변하세요. 불필요한 서술은 생략합니다.
-                2. **배출 방법(HOW)**을 물으면 [1. 공공데이터]와 [2. 대형폐기물]을 최우선으로 참고하세요.
-                3. 질문이 **대형 폐기물**(가구, 가전 등) 관련이면 [2. 대형폐기물] 데이터를 활용하여 **규격별 가격**과 **관리 기관**을 정확히 안내해 주세요.
-                4. **종량제 봉투**, **음식물 칩/스티커** 가격을 물으면 [3. 데이터]를 참고하여 용량별 가격을 안내해 주세요.
-                5. **배출 시간/요일(WHEN)**이나 **오늘 버려도 되는지**를 물으면 [5. 로컬데이터]와 [현재 시각]을 비교하여 정확히 답변하세요.
-                   - 예: 사용자가 "오늘 배출 가능?" 질문 시, 현재 요일(${dayName})이 배출 요일에 포함되는지 확인.
-                6. 정보가 부족하더라도 일반 상식을 동원해 **결론부터 짧게** 해결책을 제시하세요.
-                7. **이모지 사용 제한:** 문장 중간에는 이모지를 사용하지 마세요. 답변의 맨 마지막에만 1개 또는 2개 정도의 웃는 얼굴 이모지(😊, 🙌 등)를 사용해 주세요. 
-            `;
+                    [3. 공공데이터: 종량제봉투/납부필증 가격 (핵심 - 가격 문의 시)]
+                    ${wasteBagContext || ""}
+                    ${foodWasteContext || ""}
 
-            const result = await model.generateContentStream(prompt);
+                    [4. 공공데이터: 수거/회수처 (참고용 - 장소)]
+                    ${placeContext || "관련 데이터 없음"}
 
-            const stream = new ReadableStream({
-                async start(controller) {
-                    const encoder = new TextEncoder();
-                    try {
-                        for await (const chunk of result.stream) {
-                            const chunkText = chunk.text();
-                            controller.enqueue(encoder.encode(chunkText));
+                    [5. 로컬데이터: 우리 동네 배출 규칙 (핵심 - 시간/요일)]
+                    ${ruleContext || "지역 배출 규칙 데이터 없음"}
+
+                    [지시사항]
+                    1. **핵심 정보 위주로 간결하게 요약**하여 답변하세요. 불필요한 서술은 생략합니다.
+                    2. **배출 방법(HOW)**을 물으면 [1. 공공데이터]와 [2. 대형폐기물]을 최우선으로 참고하세요.
+                    3. 질문이 **대형 폐기물**(가구, 가전 등) 관련이면 [2. 대형폐기물] 데이터를 활용하여 **규격별 가격**과 **관리 기관**을 정확히 안내해 주세요.
+                    4. **종량제 봉투**, **음식물 칩/스티커** 가격을 물으면 [3. 데이터]를 참고하여 용량별 가격을 안내해 주세요.
+                    5. **배출 시간/요일(WHEN)**이나 **오늘 버려도 되는지**를 물으면 [5. 로컬데이터]와 [현재 시각]을 비교하여 정확히 답변하세요.
+                       - 예: 사용자가 "오늘 배출 가능?" 질문 시, 현재 요일(${dayName})이 배출 요일에 포함되는지 확인.
+                    6. 정보가 부족하더라도 일반 상식을 동원해 **결론부터 짧게** 해결책을 제시하세요.
+                    7. **이모지 사용 제한:** 문장 중간에는 이모지를 사용하지 마세요. 답변의 맨 마지막에만 1개 또는 2개 정도의 웃는 얼굴 이모지(😊, 🙌 등)를 사용해 주세요. 
+                `;
+
+                result = await model.generateContentStream(prompt);
+
+                // 스트림 응답 반환
+                const stream = new ReadableStream({
+                    async start(controller) {
+                        const encoder = new TextEncoder();
+                        try {
+                            for await (const chunk of result.stream) {
+                                const chunkText = chunk.text();
+                                controller.enqueue(encoder.encode(chunkText));
+                            }
+                            controller.close();
+                        } catch (e) {
+                            controller.error(e);
                         }
-                        controller.close();
-                    } catch (e) {
-                        controller.error(e);
-                    }
-                },
-            });
+                    },
+                });
 
-            return new Response(stream, {
-                headers: {
-                    'Content-Type': 'text/plain; charset=utf-8',
-                    'Transfer-Encoding': 'chunked',
-                },
-            });
+                return new Response(stream, {
+                    headers: {
+                        'Content-Type': 'text/plain; charset=utf-8',
+                        'Transfer-Encoding': 'chunked',
+                    },
+                });
 
-        } catch (error: any) {
-            console.error("Gemini Error:", error);
-            const errorMessage = error.status === 503 || error.message?.includes('503')
-                ? '인공지능 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
-                : '인공지능 서비스 연결 중에 오류가 발생했습니다.';
-            return NextResponse.json({ error: errorMessage }, { status: 500 });
-        }
-    }
-
-    // Gemini 실패 시 폴백
-    if (publicDataItems.length > 0 || largeWasteItems.length > 0) {
-        return NextResponse.json({
-            resultType: 'list',
-            response: {
-                body: {
-                    items: [...publicDataItems, ...largeWasteItems]
-                }
+            } catch (error: any) {
+                console.error(`Gemini Model ${modelName} Error:`, error);
+                lastError = error;
+                // 한도 초과(429/503 등) 시 다음 모델 시도
+                continue;
             }
-        });
+        }
+
+        // 모든 모델 실패 시 데이터가 있으면 폴백 반환
+        if (publicDataItems.length > 0 || largeWasteItems.length > 0) {
+            return NextResponse.json({
+                resultType: 'list',
+                response: {
+                    body: {
+                        items: [...publicDataItems, ...largeWasteItems]
+                    }
+                }
+            });
+        }
+
+        // 데이터도 없고 AI도 실패한 경우 최종 에러
+        const errorMessage = lastError?.status === 503 || lastError?.message?.includes('503') || lastError?.status === 429
+            ? '인공지능 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
+            : '인공지능 서비스 연결 중에 오류가 발생했습니다.';
+
+        return NextResponse.json({
+            error: errorMessage,
+            message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
+        }, { status: 500 });
     }
 
-    // 최종 폴백
-    return NextResponse.json({
-        message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Gemini API key is missing' }, { status: 500 });
 }
