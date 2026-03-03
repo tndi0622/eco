@@ -11,7 +11,7 @@ import ChatSkeleton from './ChatSkeleton';
 import FormattedText from '@/components/FormattedText';
 import Image from 'next/image';
 import { useUser } from '@/context/UserContext';
-import { getJosa, extractKeyword } from '@/lib/utils';
+import { getJosa, extractKeyword, compressImage } from '@/lib/utils';
 
 const MASCOT_IMAGES = [
     '/images/eco_mascot_thinking.png',
@@ -58,6 +58,7 @@ function ChatContent() {
 
     // 파일 입력 Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
 
     // 음성 인식 상태
     const [isListening, setIsListening] = useState(false);
@@ -313,6 +314,11 @@ function ChatContent() {
 
     const handleCameraClick = () => {
         setShowAttachMenu(false);
+        cameraInputRef.current?.click();
+    };
+
+    const handleGalleryClick = () => {
+        setShowAttachMenu(false);
         fileInputRef.current?.click();
     };
 
@@ -327,7 +333,9 @@ function ChatContent() {
 
         const reader = new FileReader();
         reader.onloadend = async () => {
-            const base64 = reader.result as string;
+            const rawBase64 = reader.result as string;
+            // 사진의 경우 용량이 매우 클 수 있으므로 압축
+            const base64 = await compressImage(rawBase64);
 
             const hasToken = await useToken(2);
             if (hasToken) {
@@ -371,6 +379,8 @@ function ChatContent() {
                     return;
                 }
 
+                // pendingImage는 이미 page.tsx에서 압축되어 넘어오지만, 
+                // 혹시 모를 상황을 위해 여기서도 체크 가능 (현재는 이미 압축됨)
                 const hasToken = await useToken(2);
                 if (hasToken) {
                     const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
@@ -477,6 +487,14 @@ function ChatContent() {
                 style={{ display: 'none' }}
                 onChange={handleImageUpload}
             />
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={cameraInputRef}
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+            />
 
             <div className={styles.messagesArea}>
                 {messages.length === 0 ? (
@@ -569,7 +587,20 @@ function ChatContent() {
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                         </div>
                         <div className={styles.attachLabelWrapper}>
-                            <span className={styles.attachLabel}>사진</span>
+                            <span className={styles.attachLabel}>카메라</span>
+                            <span className={styles.tokenCostTag}>2토큰</span>
+                        </div>
+                    </button>
+                    <button type="button" className={styles.attachBtn} onClick={handleGalleryClick}>
+                        <div className={styles.attachIconCircle}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                        </div>
+                        <div className={styles.attachLabelWrapper}>
+                            <span className={styles.attachLabel}>갤러리</span>
                             <span className={styles.tokenCostTag}>2토큰</span>
                         </div>
                     </button>

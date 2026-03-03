@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
+import { compressImage } from '@/lib/utils';
 
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false });
 const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false });
@@ -32,14 +33,16 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const base64 = reader.result as string;
         try {
-          sessionStorage.setItem('pendingImage', base64);
+          // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
+          const compressedBase64 = await compressImage(base64);
+          sessionStorage.setItem('pendingImage', compressedBase64);
           router.push('/chat');
         } catch (err) {
-          console.error('Local Storage Error', err);
-          alert('이미지가 너무 큽니다. 더 작은 이미지를 선택해주세요.');
+          console.error('Photo Upload Error', err);
+          alert('이미지를 처리하는 중 오류가 발생했습니다. 나중에 다시 시도해 주세요.');
         }
       };
       reader.readAsDataURL(file);

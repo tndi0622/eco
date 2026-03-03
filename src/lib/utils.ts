@@ -59,3 +59,40 @@ export const extractKeyword = (text: string) => {
 
     return { keyword: cleanText, modifier };
 };
+
+/**
+ * 이미지 압축 및 리사이징 (Canvas 사용)
+ * @param base64Value 원본 base64 이미지
+ * @param maxWidth 최대 너비 (기본 1024px)
+ * @param quality 압축 품질 (0~1, 기본 0.7)
+ */
+export const compressImage = (base64Value: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = base64Value;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Canvas context could not be created'));
+                return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedBase64);
+        };
+        img.onerror = (error) => reject(error);
+    });
+};
