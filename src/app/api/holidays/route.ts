@@ -29,25 +29,28 @@ export async function GET(request: Request) {
     const apiUrl = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${apiKey}&solYear=${year}&solMonth=${solMonth}&numOfRows=100&_type=json`;
 
     try {
-        const response = await fetchWithTimeout(apiUrl);
-        if (!response.ok) throw new Error('API fetch failed');
+        // 데이터고속도로 API는 때로 응답이 느릴 수 있으므로 타임아웃을 5초로 늘림
+        const data = await fetchWithTimeout(apiUrl, 5000);
 
-        const data = await response.json();
-
-        // JSON 응답인 경우 (data.go.kr의 공휴일 API는 _type=json 지원함)
+        // JSON 응답인 경우
         const items = getItems(data);
 
         const holidays = items.map((item: any) => ({
             date: `${String(item.locdate).substring(0, 4)}-${String(item.locdate).substring(4, 6)}-${String(item.locdate).substring(6, 8)}`,
             name: item.dateName,
-            isHoliday: item.isHoliday === 'Y'
+            isHoliday: item.isHoliday === 'Y' || item.isHoliday === undefined // 공휴일 정보가 없으면 기본적으로 휴일로 간주하거나 API 정의에 따라 처리
         }));
 
         return NextResponse.json({ holidays });
 
-    } catch (error) {
-        console.error('Failed to fetch holidays:', error);
-        // XML로 재시도 또는 에러 반환
-        return NextResponse.json({ error: 'Internal Server Error', holidays: [] }, { status: 500 });
+    } catch (error: any) {
+        console.error('Failed to fetch holidays:', error.message || error);
+
+        // 에러가 발생하더라도 빈 배열을 반환하여 클라이언트 측 오류 방지
+        return NextResponse.json({
+            error: 'Failed to fetch holiday data',
+            details: error.message,
+            holidays: []
+        }, { status: 200 }); // 200으로 반환하되 에러 내용을 포함시켜 UI에서 처리할 수 있게 함
     }
 }
