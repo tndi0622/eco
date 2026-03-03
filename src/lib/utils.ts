@@ -68,50 +68,45 @@ export const extractKeyword = (text: string) => {
  */
 export const compressImage = (source: File | string, maxWidth = 1024, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
-        const img = new Image();
-        let objectUrl: string | null = null;
-
-        img.onload = () => {
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-                height = (maxWidth / width) * height;
-                width = maxWidth;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                reject(new Error('Canvas context could not be created'));
-                return;
-            }
-
-            ctx.drawImage(img, 0, 0, width, height);
-            try {
-                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedBase64);
-            } catch (e) {
-                reject(new Error('이미지 변환 중 오류가 발생했습니다.'));
-            }
-        };
-
-        img.onerror = (error) => {
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-            console.error('Image compression error:', error);
-            reject(new Error('이미지를 불러오는 중 오류가 발생했습니다.'));
-        };
-
-        // 핸들러를 먼저 등록한 후 src 설정 (Race Condition 방지)
-        if (source instanceof File) {
-            objectUrl = URL.createObjectURL(source);
-            img.src = objectUrl;
-        } else {
-            img.src = source;
+        if (typeof source === 'string') {
+            resolve(source);
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas context could not be created'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+                try {
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedBase64);
+                } catch (err) {
+                    reject(new Error('이미지 변환 중 오류가 발생했습니다.'));
+                }
+            };
+            img.onerror = () => reject(new Error('이미지 로딩 실패'));
+            img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('파일 읽기 실패'));
+        reader.readAsDataURL(source);
     });
 };

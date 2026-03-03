@@ -39,7 +39,7 @@ export default function Home() {
         // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
         // File 객체를 직접 전달하여 메모리 효율성 개선
         const compressedBase64 = await compressImage(file);
-        sessionStorage.setItem('pendingImage', compressedBase64);
+        localStorage.setItem('pendingImage', compressedBase64);
         router.push('/chat');
       } catch (err) {
         console.error('Photo Upload Error:', err);

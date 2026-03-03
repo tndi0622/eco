@@ -374,11 +374,11 @@ function ChatContent() {
         const processPendingImage = async () => {
             if (loading) return; // 유저 데이터가 아직 로딩 중이면 기다림
 
-            const pendingImage = sessionStorage.getItem('pendingImage');
+            const pendingImage = localStorage.getItem('pendingImage');
             if (pendingImage) {
                 if (!isSubscribed && tokens < 2 && !isAdmin) {
                     setShowTokenModal(true);
-                    sessionStorage.removeItem('pendingImage');
+                    localStorage.removeItem('pendingImage');
                     return;
                 }
 
@@ -417,7 +417,7 @@ function ChatContent() {
                     console.error("Pending Image Error:", error);
                     setIsThinking(false);
                 }
-                sessionStorage.removeItem('pendingImage');
+                localStorage.removeItem('pendingImage');
             }
         };
 
