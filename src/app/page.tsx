@@ -210,10 +210,10 @@ export default function Home() {
 
 
         {/* 광고 섹션 예시 (실제 슬롯 ID가 생기면 dataAdSlot을 수정해 주세요) */}
-        <section style={{ marginTop: '30px' }}>
+        {/* <section style={{ marginTop: '30px' }}>
           <div style={{ fontSize: '0.7rem', color: '#ccc', textAlign: 'center', marginBottom: '4px' }}>ADVERTISEMENT</div>
           <AdBanner dataAdSlot="YOUR_AD_SLOT_ID" />
-        </section>
+        </section> */}
       </div>
 
       <div className={`${styles.toast} ${showToast ? styles.show : ''}`} onClick={() => router.push('/settings')}>

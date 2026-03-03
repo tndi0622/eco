@@ -459,10 +459,10 @@ export default function Settings() {
                 <StoreModal onClose={() => setShowStoreModal(false)} />
             )}
             {/* Ad Section at the bottom */}
-            <section style={{ marginTop: '40px', paddingBottom: '20px' }}>
+            {/* <section style={{ marginTop: '40px', paddingBottom: '20px' }}>
                 <div style={{ fontSize: '0.7rem', color: '#ccc', textAlign: 'center', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>ADVERTISEMENT</div>
                 <AdBanner dataAdSlot="YOUR_AD_SLOT_ID" />
-            </section>
+            </section> */}
         </div>
     );
 }
