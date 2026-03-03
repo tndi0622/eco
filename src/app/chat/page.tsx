@@ -228,6 +228,7 @@ function ChatContent() {
 
     const handleVoiceInput = () => {
         setShowAttachMenu(false); // 선택 시 메뉴 닫기
+
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
             return;
@@ -241,7 +242,14 @@ function ChatContent() {
         recognition.maxAlternatives = 1;
 
         setIsListening(true);
-        recognition.start();
+
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Speech Recognition Start Error:", e);
+            setIsListening(false);
+            return;
+        }
 
         recognition.onresult = (event: any) => {
             const speechResult = event.results[0][0].transcript;
@@ -253,10 +261,16 @@ function ChatContent() {
         recognition.onerror = (event: any) => {
             console.error("Speech Error", event.error);
             setIsListening(false);
+
             if (event.error === 'not-allowed') {
-                alert("마이크 권한이 필요합니다. 브라우저 주소창 옆의 자물쇠 아이콘을 눌러 마이크 허용을 해주세요. 🎤");
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                if (isIOS) {
+                    alert("마이크 사용 권한이 필요합니다.\n\n해결 방법:\n1. Safari 주소창 'AA' 아이콘 클릭\n2. [웹 사이트 설정] 메뉴 선택\n3. 마이크 권한을 '허용'으로 변경해 주세요. 🎤");
+                } else {
+                    alert("마이크 권한이 필요합니다. 브라우저 설정에서 마이크 허용을 눌러주세요. 🎤");
+                }
             } else if (event.error === 'no-speech') {
-                // 사용자가 아무 말도 하지 않은 경우, 조용히 리셋하거나 가벼운 토스트 메시지 표시
+                // 무시
             } else {
                 alert("음성 인식 오류: " + event.error);
             }
