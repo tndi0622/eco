@@ -54,5 +54,5 @@ export const getItems = (data: any) => {
  * Gemini 모델 리스트
  */
 export const AVAILABLE_GEMINI_MODELS = [
-    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
 ];
