@@ -29,23 +29,23 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        try {
-          // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
-          const compressedBase64 = await compressImage(base64);
-          sessionStorage.setItem('pendingImage', compressedBase64);
-          router.push('/chat');
-        } catch (err) {
-          console.error('Photo Upload Error', err);
-          alert('이미지를 처리하는 중 오류가 발생했습니다. 나중에 다시 시도해 주세요.');
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsProcessing(true);
+      try {
+        // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
+        // File 객체를 직접 전달하여 메모리 효율성 개선
+        const compressedBase64 = await compressImage(file);
+        sessionStorage.setItem('pendingImage', compressedBase64);
+        router.push('/chat');
+      } catch (err) {
+        console.error('Photo Upload Error:', err);
+        alert('이미지를 처리하는 중 오류가 발생했습니다. 나중에 다시 시도해 주세요.');
+        setIsProcessing(false);
+      }
     }
     e.target.value = '';
   }, [router]);
@@ -231,6 +231,12 @@ export default function Home() {
         </div>
         <button className={styles.toastClose} onClick={(e) => { e.stopPropagation(); setShowToast(false); }}>×</button>
       </div>
+      {isProcessing && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+          <p>사진을 분석하기 위해 준비 중입니다...</p>
+        </div>
+      )}
     </div>
   );
 }

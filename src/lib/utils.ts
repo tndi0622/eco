@@ -62,15 +62,24 @@ export const extractKeyword = (text: string) => {
 
 /**
  * 이미지 압축 및 리사이징 (Canvas 사용)
- * @param base64Value 원본 base64 이미지
+ * @param source 원본 File 또는 base64 이미지
  * @param maxWidth 최대 너비 (기본 1024px)
  * @param quality 압축 품질 (0~1, 기본 0.7)
  */
-export const compressImage = (base64Value: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
+export const compressImage = (source: File | string, maxWidth = 1024, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.src = base64Value;
+        let objectUrl: string | null = null;
+
+        if (source instanceof File) {
+            objectUrl = URL.createObjectURL(source);
+            img.src = objectUrl;
+        } else {
+            img.src = source;
+        }
+
         img.onload = () => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
@@ -93,6 +102,11 @@ export const compressImage = (base64Value: string, maxWidth = 1024, quality = 0.
             const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
             resolve(compressedBase64);
         };
-        img.onerror = (error) => reject(error);
+
+        img.onerror = (error) => {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            console.error('Image compression error:', error);
+            reject(new Error('이미지를 불러오는 중 오류가 발생했습니다.'));
+        };
     });
 };

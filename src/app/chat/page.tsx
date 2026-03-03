@@ -325,11 +325,11 @@ function ChatContent() {
             return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const rawBase64 = reader.result as string;
+        setIsThinking(true); // 압축 전 로딩 표시
+
+        try {
             // 사진의 경우 용량이 매우 클 수 있으므로 압축
-            const base64 = await compressImage(rawBase64);
+            const base64 = await compressImage(file);
 
             const hasToken = await useToken(2);
             if (hasToken) {
@@ -357,9 +357,14 @@ function ChatContent() {
                 }
             } else {
                 setShowTokenModal(true);
+                setIsThinking(false);
             }
-        };
-        reader.readAsDataURL(file);
+        } catch (error: any) {
+            console.error("Image Upload Error:", error);
+            alert(error.message || "이미지를 처리하는 중 오류가 발생했습니다.");
+            setIsThinking(false);
+        }
+
         e.target.value = '';
     };
 
@@ -373,34 +378,40 @@ function ChatContent() {
                     return;
                 }
 
-                // pendingImage는 이미 page.tsx에서 압축되어 넘어오지만, 
-                // 혹시 모를 상황을 위해 여기서도 체크 가능 (현재는 이미 압축됨)
-                const hasToken = await useToken(2);
-                if (hasToken) {
-                    const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
-                    if (matches) {
-                        const mimeType = matches[1];
-                        const base64Data = matches[2];
+                setIsThinking(true);
 
-                        addMessage({
-                            id: Date.now(),
-                            type: 'user',
-                            content: (
-                                <div>
-                                    <img
-                                        src={pendingImage}
-                                        alt="Uploaded Waste"
-                                        style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                                    />
-                                    <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
-                                </div>
-                            )
-                        });
+                try {
+                    const hasToken = await useToken(2);
+                    if (hasToken) {
+                        const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
+                        if (matches) {
+                            const mimeType = matches[1];
+                            const base64Data = matches[2];
 
-                        fetchRecycleInfo("image", base64Data, mimeType);
+                            addMessage({
+                                id: Date.now(),
+                                type: 'user',
+                                content: (
+                                    <div>
+                                        <img
+                                            src={pendingImage}
+                                            alt="Uploaded Waste"
+                                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                                        />
+                                        <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                                    </div>
+                                )
+                            });
+
+                            fetchRecycleInfo("image", base64Data, mimeType);
+                        }
+                    } else {
+                        setShowTokenModal(true);
+                        setIsThinking(false);
                     }
-                } else {
-                    setShowTokenModal(true);
+                } catch (error) {
+                    console.error("Pending Image Error:", error);
+                    setIsThinking(false);
                 }
                 sessionStorage.removeItem('pendingImage');
             }
