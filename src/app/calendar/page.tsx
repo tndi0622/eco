@@ -25,34 +25,74 @@ export default function Calendar() {
     const { location } = useLocation();
     const { isSubscribed } = useUser();
 
-    // 알림 상태
+    // 알림 설정 상태 (상세 설정 포함)
     const [notificationSettings, setNotificationSettings] = useState({
         general: false,
+        generalTime: '19:00',
+        generalDays: [] as number[],
         recycle: false,
-        food: false
+        recycleTime: '19:00',
+        recycleDays: [] as number[],
+        food: false,
+        foodTime: '19:00',
+        foodDays: [] as number[]
     });
 
     useEffect(() => {
         const saved = localStorage.getItem('notificationSettings');
-        if (saved) setNotificationSettings(JSON.parse(saved));
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object') {
+                    setNotificationSettings(prev => ({ ...prev, ...parsed }));
+                }
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+            }
+        }
         setToday(new Date());
     }, []);
 
-    const handleToggleNotification = (key: keyof typeof notificationSettings) => {
+    const saveSettings = (newSettings: typeof notificationSettings) => {
+        setNotificationSettings(newSettings);
+        localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+    };
+
+    const handleToggleNotification = (key: 'general' | 'recycle' | 'food') => {
         if (!isSubscribed) {
             alert('배출 알림은 프리미엄 멤버십 전용 기능입니다. ✨');
             return;
         }
         const next = { ...notificationSettings, [key]: !notificationSettings[key] };
-        setNotificationSettings(next);
-        localStorage.setItem('notificationSettings', JSON.stringify(next));
+        saveSettings(next);
+    };
+
+    const handleDayToggle = (key: 'general' | 'recycle' | 'food', dayIdx: number) => {
+        if (!isSubscribed) return;
+        const daysKey = `${key}Days` as keyof typeof notificationSettings;
+        const currentDays = notificationSettings[daysKey] as number[];
+        let nextDays: number[];
+
+        if (currentDays.includes(dayIdx)) {
+            nextDays = currentDays.filter(d => d !== dayIdx);
+        } else {
+            nextDays = [...currentDays, dayIdx].sort();
+        }
+
+        saveSettings({ ...notificationSettings, [daysKey]: nextDays });
+    };
+
+    const handleTimeChange = (key: 'general' | 'recycle' | 'food', time: string) => {
+        if (!isSubscribed) return;
+        const timeKey = `${key}Time` as keyof typeof notificationSettings;
+        saveSettings({ ...notificationSettings, [timeKey]: time });
     };
 
     // 기본 스케줄 (폴백)
     const defaultSchedule: { [key: number]: string } = {
         0: '배출 없음',
         1: '일반쓰레기, 음식물',
-        2: '종이, 플라스틱',
+        2: '종이,플라스틱',
         3: '캔, 고철, 유리',
         4: '비닐, 스티로폼',
         5: '투명 페트병 (별도 배출!)',
@@ -281,19 +321,53 @@ export default function Calendar() {
                 </div>
 
                 <div className={styles.notiSection}>
-                    <div className={styles.notiHeader}>맞춤 알림 설정</div>
+                    <div className={styles.notiHeader}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        맞춤 알림 설정
+                    </div>
                     <div className={styles.notificationList}>
                         {[
-                            { key: 'general', label: '일반쓰레기 알림', desc: '배출 당일 오전 9시 알림' },
-                            { key: 'recycle', label: '재활용 알림', desc: '배출 당일 오전 9시 알림' },
-                            { key: 'food', label: '음식물 알림', desc: '배출 당일 오전 9시 알림' }
+                            { key: 'general', label: '일반쓰레기', desc: '배출 정보 알림' },
+                            { key: 'recycle', label: '재활용', desc: '배출 정보 알림' },
+                            { key: 'food', label: '음식물', desc: '배출 정보 알림' }
                         ].map(item => (
                             <div key={item.key} className={styles.notificationItem}>
-                                <div className={styles.notiInfo}>
-                                    <div className={item.key === 'general' ? styles.notiLabel : styles.notiLabel}>{item.label}</div>
-                                    <div className={styles.notiDesc}>{item.desc}</div>
+                                <div className={styles.notiTop}>
+                                    <div className={styles.notiInfo}>
+                                        <div className={styles.notiLabel}>{item.label}</div>
+                                        <div className={styles.notiDesc}>{item.desc}</div>
+                                    </div>
+                                    <Toggle
+                                        active={!!(notificationSettings as any)[item.key]}
+                                        onClick={() => handleToggleNotification(item.key as any)}
+                                    />
                                 </div>
-                                <Toggle active={notificationSettings[item.key as keyof typeof notificationSettings]} onClick={() => handleToggleNotification(item.key as keyof typeof notificationSettings)} />
+
+                                <div className={styles.notiConfig}>
+                                    <div className={styles.daySelection}>
+                                        {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
+                                            <button
+                                                key={idx}
+                                                className={`${styles.dayBtn} ${(Array.isArray((notificationSettings as any)[`${item.key}Days`]) && (notificationSettings as any)[`${item.key}Days`].includes(idx)) ? styles.dayBtnActive : ''}`}
+                                                onClick={() => handleDayToggle(item.key as any, idx)}
+                                            >
+                                                {day}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className={styles.timeSetting}>
+                                        <span className={styles.timeLabel}>알림 시간</span>
+                                        <input
+                                            type="time"
+                                            className={styles.timeInput}
+                                            value={(notificationSettings as any)[`${item.key}Time`] || '19:00'}
+                                            onChange={(e) => handleTimeChange(item.key as any, e.target.value)}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
