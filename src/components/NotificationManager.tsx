@@ -73,20 +73,31 @@ export default function NotificationManager() {
         };
 
         const sendNotification = (title: string, body: string) => {
-            if (Notification.permission === 'granted') {
-                new Notification(`[에코도우미] ${title}`, {
-                    body: body,
-                    icon: '/favicon.ico'
-                });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(`[에코도우미] ${title}`, {
-                            body: body,
-                            icon: '/favicon.ico'
-                        });
-                    }
-                });
+            // 1. Flutter 네이티브 브릿지 확인
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('showNotification', { title, body });
+                return;
+            }
+
+            // 2. 웹 브라우저 알림 (기존 로직 - 폴백용)
+            if (typeof Notification !== 'undefined') {
+                if (Notification.permission === 'granted') {
+                    new Notification(`[에코도우미] ${title}`, {
+                        body: body,
+                        icon: '/favicon.ico'
+                    });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification(`[에코도우미] ${title}`, {
+                                body: body,
+                                icon: '/favicon.ico'
+                            });
+                        }
+                    });
+                }
+            } else {
+                console.log(`알림 (브라우저 미지원): ${title} - ${body}`);
             }
         };
 

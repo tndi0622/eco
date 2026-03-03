@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
+import { supabase } from '@/lib/supabase';
 
 // 간단한 토글 컴포넌트
 const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
@@ -53,9 +54,26 @@ export default function Calendar() {
         setToday(new Date());
     }, []);
 
-    const saveSettings = (newSettings: typeof notificationSettings) => {
+    const { user } = useUser();
+
+    const saveSettings = async (newSettings: typeof notificationSettings) => {
         setNotificationSettings(newSettings);
         localStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+
+        if (user && supabase) {
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        notification_settings: newSettings
+                    })
+                    .eq('id', user.id);
+
+                if (error) throw error;
+            } catch (error) {
+                console.error("Failed to sync settings to Supabase:", error);
+            }
+        }
     };
 
     const handleToggleNotification = (key: 'general' | 'recycle' | 'food') => {
