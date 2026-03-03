@@ -218,13 +218,35 @@
 }
 
 .notiHeader {
+    margin-bottom: 1.2rem;
+}
+
+.notiTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
     font-size: 1.1rem;
     font-weight: 800;
     color: #333;
-    margin-bottom: 1.2rem;
+}
+
+.syncToggle {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    background: #fff;
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1.5px solid #F3F4F6;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.syncToggle:active {
+    transform: scale(0.95);
 }
 
 .notificationList {
@@ -310,6 +332,7 @@
     padding: 0.8rem 1rem;
     border-radius: 12px;
     border: 1px solid #E5E7EB;
+    cursor: pointer;
 }
 
 .timeLabel {
@@ -318,16 +341,13 @@
     font-weight: 600;
 }
 
-.timeInput {
-    border: none;
-    font-size: 0.95rem;
+.timeValueDisplay {
+    font-size: 1.1rem;
+    font-weight: 800;
     color: var(--primary-green);
-    font-family: inherit;
-    font-weight: 700;
-    outline: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: right;
+    background-color: #F1F8F1;
+    padding: 4px 12px;
+    border-radius: 8px;
 }
 
 /* Toggle Switch */
@@ -371,4 +391,141 @@
     border-radius: 8px;
     font-weight: 900;
     letter-spacing: 0.5px;
+}
+
+/* Time Picker Modal Styles */
+.pickerOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+}
+
+.pickerModal {
+    width: 100%;
+    background: white;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    padding: 1.5rem;
+    padding-bottom: 2.5rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.pickerHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.pickerTitle {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.pickerCancel {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.pickerConfirm {
+    background: none;
+    border: none;
+    color: var(--primary-green);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.wheelWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.wheelContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    position: relative;
+    gap: 1.5rem;
+}
+
+.wheelColumn {
+    flex: 1;
+    height: 100%;
+    overflow-y: scroll;
+    padding: 80px 0;
+    scrollbar-width: none;
+    scroll-snap-type: y mandatory;
+}
+
+.wheelColumn::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.wheelScroll {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wheelItem {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #CCC;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    scroll-snap-align: center;
+}
+
+.wheelItemActive {
+    color: #111;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.wheelSeparator {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #333;
+}
+
+.pickerConfirmBtn {
+    width: 100%;
+    background-color: var(--primary-green);
+    color: white;
+    border: none;
+    padding: 1.2rem;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.pickerConfirmBtn:active {
+    transform: scale(0.98);
 }
