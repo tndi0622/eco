@@ -70,12 +70,6 @@ export default function Home() {
       if (!hasOnboarded && !user) setShowOnboarding(true);
     } else {
       setShowSplash(true);
-      // 스플래시 애니메이션(2.5초) 대기 후 필요한 경우 온보딩 표시
-      if (!hasOnboarded && !user) {
-        setTimeout(() => {
-          setShowOnboarding(true);
-        }, 2500);
-      }
     }
   }, [user]);
 
@@ -105,6 +99,11 @@ export default function Home() {
   const handleSplashFinish = () => {
     setShowSplash(false);
     localStorage.setItem('hasSeenSplash', 'true');
+    // 스플래시가 끝나고 아직 로그인 및 온보딩이 안 된 경우 온보딩 시작
+    const hasOnboarded = localStorage.getItem('hasOnboarded');
+    if (!hasOnboarded && !user) {
+      setShowOnboarding(true);
+    }
   };
 
   if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
