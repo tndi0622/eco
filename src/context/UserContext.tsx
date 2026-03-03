@@ -351,22 +351,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const contextValue = React.useMemo(() => ({
+        user,
+        tokens,
+        isSubscribed,
+        isAdmin,
+        subscriptionExpiry,
+        adTokensToday,
+        useToken,
+        addAdToken,
+        purchaseTokens,
+        subscribe,
+        unsubscribe,
+        loginWithGoogle,
+        logout
+    }), [user, tokens, isSubscribed, isAdmin, subscriptionExpiry, adTokensToday]);
+
     return (
-        <UserContext.Provider value={{
-            user,
-            tokens,
-            isSubscribed,
-            isAdmin,
-            subscriptionExpiry,
-            adTokensToday,
-            useToken,
-            addAdToken,
-            purchaseTokens,
-            subscribe,
-            unsubscribe,
-            loginWithGoogle,
-            logout
-        }}>
+        <UserContext.Provider value={contextValue}>
             {!loading && children}
         </UserContext.Provider>
     );

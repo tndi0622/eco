@@ -3,7 +3,7 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
@@ -21,18 +21,14 @@ export default function Home() {
   const { user, loginWithGoogle } = useUser();
   const router = useRouter();
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = useCallback(() => {
     localStorage.setItem('hasOnboarded', 'true');
     setShowOnboarding(false);
-  };
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const saveRecentSearch = (term: string) => {
-    // 사용자 요청에 따라 로직 제거됨
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -48,19 +44,16 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
     }
-    // 초기화
     e.target.value = '';
-  };
+  }, [router]);
 
 
   useEffect(() => {
-    // 스플래시 상태 확인 (탭을 열 때마다 보이지 않도록 localStorage 사용)
+    // 스플래시와 온보딩 로직 통합 관리
     const hasSeenSplash = localStorage.getItem('hasSeenSplash');
-
-    // 온보딩 상태 확인
     const hasOnboarded = localStorage.getItem('hasOnboarded');
 
-    // 이미 로그인된 경우 온보딩 건너뜀
+    // 이미 로그인된 경우 온보딩 처리
     if (user && !hasOnboarded) {
       localStorage.setItem('hasOnboarded', 'true');
     }
@@ -73,22 +66,13 @@ export default function Home() {
     }
   }, [user]);
 
-  // 플레이스홀더 로직
-  useEffect(() => {
-    setSearchPlaceholder('배출 방법이 궁금한 물품을 입력해 주세요');
-  }, []);
-
-
-  // 위치 알림 및 토스트 로직
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-
+  // 위치 알림 및 토스트 로직 최적화
   useEffect(() => {
     if (!location || location === '위치 설정이 필요합니다') {
       setShowLocationPrompt(true);
       const timer = setTimeout(() => {
         setShowToast(true);
-      }, 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     } else {
       setShowLocationPrompt(false);
@@ -96,15 +80,43 @@ export default function Home() {
     }
   }, [location]);
 
-  const handleSplashFinish = () => {
+  const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
     localStorage.setItem('hasSeenSplash', 'true');
-    // 스플래시가 끝나고 아직 로그인 및 온보딩이 안 된 경우 온보딩 시작
     const hasOnboarded = localStorage.getItem('hasOnboarded');
     if (!hasOnboarded && !user) {
       setShowOnboarding(true);
     }
-  };
+  }, [user]);
+
+  const handleVoiceSearch = useCallback(() => {
+    router.push('/chat?mode=voice');
+  }, [router]);
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      router.push(`/chat?q=${encodeURIComponent(searchInput.trim())}`);
+    }
+  }, [searchInput, router]);
+
+  // 위치 알림 및 토스트 상태
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  // 위치 상태 감시 효과
+  useEffect(() => {
+    if (!location || location === '위치 설정이 필요합니다') {
+      setShowLocationPrompt(true);
+      const timer = setTimeout(() => {
+        setShowToast(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLocationPrompt(false);
+      setShowToast(false);
+    }
+  }, [location]);
 
   if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
 
@@ -149,18 +161,6 @@ export default function Home() {
       </div>
     );
   }
-
-  const handleVoiceSearch = () => {
-    router.push('/chat?mode=voice');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      saveRecentSearch(searchInput.trim());
-      router.push(`/chat?q=${encodeURIComponent(searchInput)}`);
-    }
-  };
 
   return (
     <div className={styles.containerMinimal}>
