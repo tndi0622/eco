@@ -58,7 +58,6 @@ function ChatContent() {
 
     // 파일 입력 Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const cameraInputRef = useRef<HTMLInputElement>(null);
 
     // 음성 인식 상태
     const [isListening, setIsListening] = useState(false);
@@ -312,12 +311,7 @@ function ChatContent() {
         };
     };
 
-    const handleCameraClick = () => {
-        setShowAttachMenu(false);
-        cameraInputRef.current?.click();
-    };
-
-    const handleGalleryClick = () => {
+    const handleImageClick = () => {
         setShowAttachMenu(false);
         fileInputRef.current?.click();
     };
@@ -487,14 +481,6 @@ function ChatContent() {
                 style={{ display: 'none' }}
                 onChange={handleImageUpload}
             />
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                ref={cameraInputRef}
-                style={{ display: 'none' }}
-                onChange={handleImageUpload}
-            />
 
             <div className={styles.messagesArea}>
                 {messages.length === 0 ? (
@@ -582,25 +568,15 @@ function ChatContent() {
 
             <div className={styles.inputArea}>
                 <div className={`${styles.attachMenu} ${showAttachMenu ? styles.show : ''}`}>
-                    <button type="button" className={styles.attachBtn} onClick={handleCameraClick}>
-                        <div className={styles.attachIconCircle}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-                        </div>
-                        <div className={styles.attachLabelWrapper}>
-                            <span className={styles.attachLabel}>카메라</span>
-                            <span className={styles.tokenCostTag}>2토큰</span>
-                        </div>
-                    </button>
-                    <button type="button" className={styles.attachBtn} onClick={handleGalleryClick}>
+                    <button type="button" className={styles.attachBtn} onClick={handleImageClick}>
                         <div className={styles.attachIconCircle}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                <polyline points="21 15 16 10 5 21" />
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
                             </svg>
                         </div>
                         <div className={styles.attachLabelWrapper}>
-                            <span className={styles.attachLabel}>갤러리</span>
+                            <span className={styles.attachLabel}>사진 분석</span>
                             <span className={styles.tokenCostTag}>2토큰</span>
                         </div>
                     </button>
