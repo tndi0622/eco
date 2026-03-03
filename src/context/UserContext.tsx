@@ -11,6 +11,7 @@ interface UserContextType {
     isAdmin: boolean;
     subscriptionExpiry: string | null;
     adTokensToday: number;
+    loading: boolean;
     useToken: (cost?: number) => Promise<boolean>;
     addAdToken: () => Promise<boolean>;
     purchaseTokens: (count: number) => Promise<void>;
@@ -364,8 +365,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         subscribe,
         unsubscribe,
         loginWithGoogle,
-        logout
-    }), [user, tokens, isSubscribed, isAdmin, subscriptionExpiry, adTokensToday]);
+        logout,
+        loading
+    }), [user, tokens, isSubscribed, isAdmin, subscriptionExpiry, adTokensToday, loading]);
 
     return (
         <UserContext.Provider value={contextValue}>

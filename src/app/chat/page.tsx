@@ -73,7 +73,7 @@ function ChatContent() {
     const [showTokenModal, setShowTokenModal] = useState(false);
     const [isAdLoading, setIsAdLoading] = useState(false);
 
-    const { tokens, isSubscribed, isAdmin, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
+    const { tokens, isSubscribed, isAdmin, loading, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         // DOM이 업데이트되고 렌더링되었는지 확인하기 위해 약간의 타임아웃 사용
@@ -368,8 +368,12 @@ function ChatContent() {
         e.target.value = '';
     };
 
+    // ... scroll effect ...
+
     useEffect(() => {
         const processPendingImage = async () => {
+            if (loading) return; // 유저 데이터가 아직 로딩 중이면 기다림
+
             const pendingImage = sessionStorage.getItem('pendingImage');
             if (pendingImage) {
                 if (!isSubscribed && tokens < 2 && !isAdmin) {
@@ -418,7 +422,7 @@ function ChatContent() {
         };
 
         processPendingImage();
-    }, [tokens, isSubscribed, isAdmin]);
+    }, [tokens, isSubscribed, isAdmin, loading]);
 
     useEffect(() => {
         const query = searchParams.get('q');

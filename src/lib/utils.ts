@@ -71,13 +71,6 @@ export const compressImage = (source: File | string, maxWidth = 1024, quality = 
         const img = new Image();
         let objectUrl: string | null = null;
 
-        if (source instanceof File) {
-            objectUrl = URL.createObjectURL(source);
-            img.src = objectUrl;
-        } else {
-            img.src = source;
-        }
-
         img.onload = () => {
             if (objectUrl) URL.revokeObjectURL(objectUrl);
             const canvas = document.createElement('canvas');
@@ -99,8 +92,12 @@ export const compressImage = (source: File | string, maxWidth = 1024, quality = 
             }
 
             ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-            resolve(compressedBase64);
+            try {
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedBase64);
+            } catch (e) {
+                reject(new Error('이미지 변환 중 오류가 발생했습니다.'));
+            }
         };
 
         img.onerror = (error) => {
@@ -108,5 +105,13 @@ export const compressImage = (source: File | string, maxWidth = 1024, quality = 
             console.error('Image compression error:', error);
             reject(new Error('이미지를 불러오는 중 오류가 발생했습니다.'));
         };
+
+        // 핸들러를 먼저 등록한 후 src 설정 (Race Condition 방지)
+        if (source instanceof File) {
+            objectUrl = URL.createObjectURL(source);
+            img.src = objectUrl;
+        } else {
+            img.src = source;
+        }
     });
 };
