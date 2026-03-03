@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/lib/supabase';
-import { useRef } from 'react';
 
 // 간단한 토글 컴포넌트
 const Toggle = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
@@ -466,19 +465,60 @@ function ScrollTimePicker({ initialTime, onSelect }: { initialTime: string, onSe
     const [selectedH, setSelectedH] = useState(h);
     const [selectedM, setSelectedM] = useState(m);
 
+    const hourRef = useRef<HTMLDivElement>(null);
+    const minRef = useRef<HTMLDivElement>(null);
+
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const minutes = Array.from({ length: 60 }, (_, i) => i);
+
+    // 초기 스크롤 위치 설정
+    useEffect(() => {
+        if (hourRef.current) {
+            hourRef.current.scrollTop = h * 44;
+        }
+        if (minRef.current) {
+            minRef.current.scrollTop = m * 44;
+        }
+    }, []);
+
+    const handleHourScroll = () => {
+        if (hourRef.current) {
+            const index = Math.round(hourRef.current.scrollTop / 44);
+            if (index >= 0 && index < 24 && index !== selectedH) {
+                setSelectedH(index);
+            }
+        }
+    };
+
+    const handleMinScroll = () => {
+        if (minRef.current) {
+            const index = Math.round(minRef.current.scrollTop / 44);
+            if (index >= 0 && index < 60 && index !== selectedM) {
+                setSelectedM(index);
+            }
+        }
+    };
 
     return (
         <div className={styles.wheelWrapper}>
             <div className={styles.wheelContainer}>
-                <div className={styles.wheelColumn}>
+                {/* 선택 가이드 영역 */}
+                <div className={styles.selectionHighlight} />
+
+                <div
+                    className={styles.wheelColumn}
+                    ref={hourRef}
+                    onScroll={handleHourScroll}
+                >
                     <div className={styles.wheelScroll}>
                         {hours.map(hour => (
                             <div
                                 key={hour}
                                 className={`${styles.wheelItem} ${selectedH === hour ? styles.wheelItemActive : ''}`}
-                                onClick={() => setSelectedH(hour)}
+                                onClick={() => {
+                                    setSelectedH(hour);
+                                    if (hourRef.current) hourRef.current.scrollTo({ top: hour * 44, behavior: 'smooth' });
+                                }}
                             >
                                 {String(hour).padStart(2, '0')}
                             </div>
@@ -486,13 +526,20 @@ function ScrollTimePicker({ initialTime, onSelect }: { initialTime: string, onSe
                     </div>
                 </div>
                 <div className={styles.wheelSeparator}>:</div>
-                <div className={styles.wheelColumn}>
+                <div
+                    className={styles.wheelColumn}
+                    ref={minRef}
+                    onScroll={handleMinScroll}
+                >
                     <div className={styles.wheelScroll}>
                         {minutes.map(min => (
                             <div
                                 key={min}
                                 className={`${styles.wheelItem} ${selectedM === min ? styles.wheelItemActive : ''}`}
-                                onClick={() => setSelectedM(min)}
+                                onClick={() => {
+                                    setSelectedM(min);
+                                    if (minRef.current) minRef.current.scrollTo({ top: min * 44, behavior: 'smooth' });
+                                }}
                             >
                                 {String(min).padStart(2, '0')}
                             </div>
