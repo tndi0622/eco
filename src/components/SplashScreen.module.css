@@ -83,6 +83,7 @@
     width: 100%;
     max-width: 480px;
     height: 100vh;
+    height: 100dvh;
     z-index: 9999;
     background-color: #FFFFFF;
     /* White background as requested */
