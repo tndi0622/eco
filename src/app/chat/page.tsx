@@ -264,7 +264,11 @@ function ChatContent() {
 
             if (event.error === 'not-allowed') {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-                if (isIOS) {
+                const isWebView = /wv|Webview/i.test(navigator.userAgent);
+
+                if (isWebView) {
+                    alert("앱의 마이크 권한이 꺼져 있거나 웹뷰에서 차단되었습니다.\n\n해결 방법:\n1. 휴대폰 [설정 > 애플리케이션 > 에코(앱 이름) > 권한]\n2. '마이크' 권한을 '허용'으로 변경해 주세요. 🎤");
+                } else if (isIOS) {
                     alert("마이크 사용 권한이 필요합니다.\n\n해결 방법:\n1. Safari 주소창 'AA' 아이콘 클릭\n2. [웹 사이트 설정] 메뉴 선택\n3. 마이크 권한을 '허용'으로 변경해 주세요. 🎤");
                 } else {
                     alert("마이크 권한이 필요합니다. 브라우저 설정에서 마이크 허용을 눌러주세요. 🎤");
