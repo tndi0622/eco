@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseStringPromise } from 'xml2js';
+import { fetchWithTimeout, getItems } from '@/lib/api-utils';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -25,36 +26,19 @@ export async function GET(request: Request) {
     // 직접 URL을 구성할 때는 'Encoding' 키를 사용하는 것이 일반적임.
     // 이 키는 특수 문자가 없으므로 그냥 URL에 포함해도 안전함.
 
-    const apiUrl = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${apiKey}&solYear=${year}&solMonth=${solMonth}&numOfRows=100`;
+    const apiUrl = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${apiKey}&solYear=${year}&solMonth=${solMonth}&numOfRows=100&_type=json`;
 
     try {
-        const response = await fetch(apiUrl);
-        const text = await response.text();
+        const response = await fetchWithTimeout(apiUrl);
+        if (!response.ok) throw new Error('API fetch failed');
 
-        console.log(`API Call to: ${apiUrl}`); // 디버깅
-        // console.log(`Response: ${text.substring(0, 200)}...`); 
+        const data = await response.json();
 
-        const result = await parseStringPromise(text, { explicitArray: false, ignoreAttrs: true });
-
-        // 서비스 에러 확인
-        if (result.OpenAPI_ServiceResponse?.cmmMsgHeader?.errMsg) {
-            console.error('OpenAPI Error:', result.OpenAPI_ServiceResponse.cmmMsgHeader.errMsg);
-            return NextResponse.json({ error: 'OpenAPI Error', details: result.OpenAPI_ServiceResponse.cmmMsgHeader }, { status: 500 });
-        }
-
-        const body = result.response?.body;
-        if (!body || !body.items) {
-            return NextResponse.json({ holidays: [] });
-        }
-
-        let items = body.items.item;
-        // 단일 항목인 경우 배열로 정규화
-        if (!Array.isArray(items)) {
-            items = [items];
-        }
+        // JSON 응답인 경우 (data.go.kr의 공휴일 API는 _type=json 지원함)
+        const items = getItems(data);
 
         const holidays = items.map((item: any) => ({
-            date: `${item.locdate.substring(0, 4)}-${item.locdate.substring(4, 6)}-${item.locdate.substring(6, 8)}`,
+            date: `${String(item.locdate).substring(0, 4)}-${String(item.locdate).substring(4, 6)}-${String(item.locdate).substring(6, 8)}`,
             name: item.dateName,
             isHoliday: item.isHoliday === 'Y'
         }));
@@ -63,6 +47,7 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error('Failed to fetch holidays:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        // XML로 재시도 또는 에러 반환
+        return NextResponse.json({ error: 'Internal Server Error', holidays: [] }, { status: 500 });
     }
 }

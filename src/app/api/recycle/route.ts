@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import wasteRules from '@/data/waste_rules.json';
 import { supabase } from '@/lib/supabase';
+import { parseLocation, fetchWithTimeout, getItems, AVAILABLE_GEMINI_MODELS } from '@/lib/api-utils';
 
 export const runtime = 'edge';
 
@@ -21,41 +22,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
-    // 1. 데이터 컨테이너
-    let publicDataItems: any[] = [];      // 분류/재활용 방법
-    let collectionPointItems: any[] = []; // 수거 센터
-    let wasteInfoItems: any[] = [];       // 생활 폐기물 배출 규칙 (시간/장소)
-    let largeWasteItems: any[] = [];      // 대형 폐기물 수수료 정보 (신규)
-    let wasteBagItems: any[] = [];        // 쓰레기 봉투 가격 정보 (신규)
-    let foodWasteItems: any[] = [];       // 음식물 쓰레기 납부 필증 가격 정보 (신규)
-
-    // 헬퍼: 위치 파싱
-    const parseLocation = (loc: string | null) => {
-        if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
-        const parts = loc.split(' ');
-        return {
-            sido: parts[0] || '',
-            sigungu: parts[1] || '',
-            dong: parts[2] || ''
-        };
-    };
-
     const { sido, sigungu, dong } = parseLocation(location);
-
-    // 헬퍼: 타임아웃 래퍼
-    const fetchWithTimeout = async (url: string, ms: number = 2500) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), ms);
-        try {
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (!res.ok) throw new Error(`Status ${res.status}`);
-            return await res.json();
-        } catch (e) {
-            clearTimeout(timeoutId);
-            throw e;
-        }
-    };
 
     const isDataEmpty = (d: any) => {
         if (!d?.response?.body?.items) return true;
@@ -66,42 +33,27 @@ export async function GET(request: Request) {
         return false;
     };
 
-    const getItems = (data: any) => {
-        if (isDataEmpty(data)) return [];
-        const rawItems = data.response.body.items;
-        if (Array.isArray(rawItems)) return rawItems;
-        if (Array.isArray(rawItems?.item)) return rawItems.item;
-        if (rawItems?.item) return [rawItems.item];
-        return [];
-    };
-
-    // 병렬 데이터 가져오기
+    // 1. 공공데이터 가져오기 함수들
     const fetchPublicData = async () => {
         try {
             let apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
             let data = await fetchWithTimeout(apiUrl);
 
-            // 데이터가 비어있으면 공백 없이 재시도
             if (isDataEmpty(data) && query.includes(' ')) {
                 const noSpaceQuery = query.replace(/\s+/g, '');
                 apiUrl = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(noSpaceQuery)}&type=json`;
                 data = await fetchWithTimeout(apiUrl);
             }
             return getItems(data);
-        } catch (e) {
-            return [];
-        }
+        } catch (e) { return []; }
     };
 
     const fetchCollectionData = async () => {
         if (!sido) return [];
         try {
             const url = `https://apis.data.go.kr/B552584/kecoapi/reutilCltRtrvlBzentyService/getReutilCltRtrvlBzentyInfo?serviceKey=${apiKey}&numOfRows=5&pageNo=1&returnType=json&sido=${encodeURIComponent(sido)}&gunGu=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
+            return getItems(await fetchWithTimeout(url));
+        } catch (e) { return []; }
     };
 
     const fetchLargeWasteData = async () => {
@@ -110,11 +62,8 @@ export async function GET(request: Request) {
             if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
             if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
             if (query) url += `&larWasNm=${encodeURIComponent(query)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
+            return getItems(await fetchWithTimeout(url));
+        } catch (e) { return []; }
     };
 
     const fetchWasteBagData = async () => {
@@ -122,11 +71,8 @@ export async function GET(request: Request) {
             let url = `https://api.data.go.kr/openapi/tn_pubr_public_weighted_envlp_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
             if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
             if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
-        } catch (e) {
-            return [];
-        }
+            return getItems(await fetchWithTimeout(url));
+        } catch (e) { return []; }
     };
 
     const fetchFoodWasteData = async () => {
@@ -134,8 +80,7 @@ export async function GET(request: Request) {
             let url = `https://api.data.go.kr/openapi/tn_pubr_public_food_trash_api?serviceKey=${apiKey}&pageNo=1&numOfRows=100&type=json`;
             if (sido) url += `&ctpvNm=${encodeURIComponent(sido)}`;
             if (sigungu) url += `&sggNm=${encodeURIComponent(sigungu)}`;
-            const data = await fetchWithTimeout(url);
-            return getItems(data);
+            return getItems(await fetchWithTimeout(url));
         } catch (e) { return []; }
     };
 
@@ -148,195 +93,112 @@ export async function GET(request: Request) {
         fetchFoodWasteData()
     ]);
 
-    if (publicDataResult.status === 'fulfilled') publicDataItems = publicDataResult.value;
-    if (collectionDataResult.status === 'fulfilled') collectionPointItems = collectionDataResult.value;
-    if (largeWasteResult.status === 'fulfilled') largeWasteItems = largeWasteResult.value;
-    if (wasteBagResult.status === 'fulfilled') wasteBagItems = wasteBagResult.value;
-    if (foodWasteResult.status === 'fulfilled') foodWasteItems = foodWasteResult.value;
+    const publicDataItems = publicDataResult.status === 'fulfilled' ? publicDataResult.value : [];
+    const collectionPointItems = collectionDataResult.status === 'fulfilled' ? collectionDataResult.value : [];
+    const largeWasteItems = largeWasteResult.status === 'fulfilled' ? largeWasteResult.value : [];
+    const wasteBagItems = wasteBagResult.status === 'fulfilled' ? wasteBagResult.value : [];
+    const foodWasteItems = foodWasteResult.status === 'fulfilled' ? foodWasteResult.value : [];
+    let wasteInfoItems: any[] = [];
 
-    // C. 로컬 JSON 조회 (동기 및 처리 속도 최적화) - Supabase 및 행정동 로직 강화
+    // 로컬 데이터 조회
     if (sido) {
         try {
-            let items: any[] = [];
-
-            // 1. Supabase 시도
             if (supabase) {
-                try {
-                    const { data, error } = await supabase
-                        .from('waste_rules')
-                        .select('*')
-                        .ilike('sido', `%${sido}%`)
-                        .ilike('sigungu', `%${sigungu}%`);
-                    if (!error && data) items = data;
-                } catch (e) { console.error("Recycle Supabase Error", e); }
+                const { data, error } = await supabase.from('waste_rules').select('*').ilike('sido', `%${sido.substring(0, 2)}%`).ilike('sigungu', `%${sigungu}%`);
+                if (!error && data) wasteInfoItems = data;
             }
-
-            // 2. 로컬 JSON으로 폴백
-            if (items.length === 0) {
-                items = (wasteRules as any[]).filter((rule: any) => {
-                    return rule.sido.includes(sido) && rule.sigungu.includes(sigungu);
+            if (wasteInfoItems.length === 0) {
+                wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido.substring(0, 2)) && rule.sigungu.includes(sigungu));
+            }
+            if (dong && wasteInfoItems.length > 1) {
+                wasteInfoItems.sort((a, b) => {
+                    const aMatch = a.emdNm && (dong.includes(a.emdNm) || a.emdNm.includes(dong));
+                    const bMatch = b.emdNm && (dong.includes(b.emdNm) || b.emdNm.includes(dong));
+                    return aMatch ? -1 : (bMatch ? 1 : 0);
                 });
             }
-
-            // 3. 행정동 우선순위로 정렬 (강화됨)
-            if (dong && items.length > 1) {
-                items.sort((a, b) => {
-                    const aName = a.emdNm || '';
-                    const bName = b.emdNm || '';
-                    // 정확한 일치 또는 부분 일치 확인 (양방향)
-                    const aMatch = aName && (dong.includes(aName) || aName.includes(dong));
-                    const bMatch = bName && (dong.includes(bName) || bName.includes(dong));
-
-                    if (aMatch && !bMatch) return -1;
-                    if (!aMatch && bMatch) return 1;
-                    return 0;
-                });
-            }
-
-            wasteInfoItems = items;
-        } catch (e) {
-            console.error("Waste Info Lookup Error:", e);
-        }
+        } catch (e) { }
     }
 
-    // 2. Gemini 사용
-    if (geminiKey) {
-        const availableModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"];
+    // Gemini 답변 생성
+    const genAI = new GoogleGenerativeAI(geminiKey);
+    let lastError: any = null;
 
-        let result: any = null;
-        let lastError: any = null;
+    for (const modelName of AVAILABLE_GEMINI_MODELS) {
+        try {
+            const model = genAI.getGenerativeModel({ model: modelName });
 
-        const genAI = new GoogleGenerativeAI(geminiKey);
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const kstGap = 9 * 60 * 60 * 1000;
+            const todayKST = new Date(utc + kstGap);
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayName = days[todayKST.getDay()];
+            const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
+            const timeStr = `${todayKST.getHours()}시 ${todayKST.getMinutes()}분`;
 
-        for (const modelName of availableModels) {
-            try {
-                const model = genAI.getGenerativeModel({ model: modelName });
+            const methodContext = publicDataItems.map((item: any) => `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`).join('\n');
+            const placeContext = collectionPointItems.map((item: any) => `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`).join('\n');
+            const largeWasteContext = largeWasteItems.map((item: any) => `- [대형폐기물] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm}, 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원`).join('\n');
+            const wasteBagContext = wasteBagItems.map((item: any) => `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원`).join('\n');
+            const ruleContext = wasteInfoItems.slice(0, 3).map((item: any) => `- [배출규칙(${item.emdNm || '전체'})] 일반: ${item.gnrlWsteDschrgDay}, 음식물: ${item.foodWsteDschrgDay}, 재활용: ${item.recycleDschrgDay}`).join('\n');
 
-                // 오늘 정보 계산 (KST)
-                const now = new Date();
-                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                const kstGap = 9 * 60 * 60 * 1000;
-                const todayKST = new Date(utc + kstGap);
+            const prompt = `
+                당신은 재활용 전문가 친절한 '에코'입니다.
+                - 질문: "${query}"
+                - 위치: ${location || '알 수 없음'}
+                - 현재: ${dateStr} ${timeStr}
 
-                const days = ['일', '월', '화', '수', '목', '금', '토'];
-                const dayName = days[todayKST.getDay()];
-                const dateStr = `${todayKST.getMonth() + 1}월 ${todayKST.getDate()}일 ${dayName}요일`;
-                const timeStr = `${todayKST.getHours()}시 ${todayKST.getMinutes()}분`;
+                [공공데이터 데이터]
+                ${methodContext || "재활용 방법 정보 없음"}
+                ${largeWasteContext || ""}
+                ${wasteBagContext || ""}
+                ${placeContext || ""}
+                ${ruleContext || ""}
 
-                const methodContext = publicDataItems.map(item =>
-                    `- [분리배출 방법] 품목: ${item.itemNm}, 방법: ${item.dschgMthd}, 내용: ${item.contents || ''}`
-                ).join('\n');
+                [지시사항]
+                1. 핵심 위주로 요약하여 친절하게 답변하세요.
+                2. 대형 폐기물인 경우 가격 정보를 포함하세요.
+                3. 배출 시간/요일 문의 시 기준 시각과 로컬 데이터를 비교해 안내하세요.
+                4. 이모지는 답변 마지막에만 1-2개 사용하세요.
+            `;
 
-                const placeContext = collectionPointItems.map(item =>
-                    `- [수거처] 업체: ${item.bzentNm}, 품목: ${item.reutilKndNm || item.bizKndNm}, 주소: ${item.addr || item.roadAddr}`
-                ).join('\n');
+            const result = await model.generateContentStream(prompt);
 
-                const largeWasteContext = largeWasteItems.map(item =>
-                    `- [대형폐기물 수수료] 지역: ${item.ctpvNm} ${item.sggNm}, 품목: ${item.larWasNm} (${item.larWasSeNm || ''}), 규격: ${item.larWasSpcfct}, 가격: ${item.fee}원, 문의: ${item.mngInstNm}`
-                ).join('\n');
-
-                const wasteBagContext = wasteBagItems.map(item =>
-                    `- [종량제봉투] 지역: ${item.ctpvNm} ${item.sggNm}, 종류: ${item.weightedEnvlpKndNm}, 용도: ${item.weightedEnvlpPrposNm}, 용량: ${item.weightedEnvlpCpcty}, 가격: ${item.price}원, 판매처: ${item.purchsStoreNm || '지정판매소'}`
-                ).join('\n');
-
-                const foodWasteContext = foodWasteItems.map(item =>
-                    `- [음식물납부필증] 지역: ${item.ctpvNm} ${item.sggNm}, 유형: ${item.foodTrashPayCertTypeNm}, 대상: ${item.useTrgtNm}, 용량: ${item.foodTrashCpcty}, 가격: ${item.price}원`
-                ).join('\n');
-
-                const ruleContext = wasteInfoItems.slice(0, 3).map(item =>
-                    `- [배출규칙(${item.emdNm || '전체'})] 생활쓰레기: ${item.gnrlWsteDschrgMthd} (${item.gnrlWsteDschrgDay}, ${item.gnrlWsteDschrgTime}), 음식물: ${item.foodWsteDschrgMthd} (${item.foodWsteDschrgDay}, ${item.foodWsteDschrgTime}), 재활용: ${item.recycleDschrgMthd} (${item.recycleDschrgDay}, ${item.recycleDschrgTime})`
-                ).join('\n');
-
-                const prompt = `
-                    당신은 재활용 및 분리배출을 돕는 친절한 환경 마스코트 '에코'입니다.
-                    
-                    [현재 상황]
-                    - 사용자의 질문: "${query}"
-                    - 사용자의 현재 위치: ${location || '알 수 없음'} (${sido} ${sigungu})
-                    - **현재 시각: ${dateStr} ${timeStr}** (이 시간을 기준으로 "오늘", "내일", "지금" 배출 가능 여부를 판단하세요)
-
-                    [1. 공공데이터: 분리배출 방법 (핵심 - 배출 방법)]
-                    ${methodContext || "관련 데이터 없음"}
-
-                    [2. 공공데이터: 대형폐기물 수수료 (핵심 - 대형일 경우)]
-                    ${largeWasteContext || "관련 데이터 없음 (대형폐기물이 아닐 수 있음)"}
-
-                    [3. 공공데이터: 종량제봉투/납부필증 가격 (핵심 - 가격 문의 시)]
-                    ${wasteBagContext || ""}
-                    ${foodWasteContext || ""}
-
-                    [4. 공공데이터: 수거/회수처 (참고용 - 장소)]
-                    ${placeContext || "관련 데이터 없음"}
-
-                    [5. 로컬데이터: 우리 동네 배출 규칙 (핵심 - 시간/요일)]
-                    ${ruleContext || "지역 배출 규칙 데이터 없음"}
-
-                    [지시사항]
-                    1. **핵심 정보 위주로 간결하게 요약**하여 답변하세요. 불필요한 서술은 생략합니다.
-                    2. **배출 방법(HOW)**을 물으면 [1. 공공데이터]와 [2. 대형폐기물]을 최우선으로 참고하세요.
-                    3. 질문이 **대형 폐기물**(가구, 가전 등) 관련이면 [2. 대형폐기물] 데이터를 활용하여 **규격별 가격**과 **관리 기관**을 정확히 안내해 주세요.
-                    4. **종량제 봉투**, **음식물 칩/스티커** 가격을 물으면 [3. 데이터]를 참고하여 용량별 가격을 안내해 주세요.
-                    5. **배출 시간/요일(WHEN)**이나 **오늘 버려도 되는지**를 물으면 [5. 로컬데이터]와 [현재 시각]을 비교하여 정확히 답변하세요.
-                       - 예: 사용자가 "오늘 배출 가능?" 질문 시, 현재 요일(${dayName})이 배출 요일에 포함되는지 확인.
-                    6. 정보가 부족하더라도 일반 상식을 동원해 **결론부터 짧게** 해결책을 제시하세요.
-                    7. **이모지 사용 제한:** 문장 중간에는 이모지를 사용하지 마세요. 답변의 맨 마지막에만 1개 또는 2개 정도의 웃는 얼굴 이모지(😊, 🙌 등)를 사용해 주세요. 
-                `;
-
-                result = await model.generateContentStream(prompt);
-
-                // 스트림 응답 반환
-                const stream = new ReadableStream({
-                    async start(controller) {
-                        const encoder = new TextEncoder();
-                        try {
-                            for await (const chunk of result.stream) {
-                                const chunkText = chunk.text();
-                                controller.enqueue(encoder.encode(chunkText));
-                            }
-                            controller.close();
-                        } catch (e) {
-                            controller.error(e);
+            const stream = new ReadableStream({
+                async start(controller) {
+                    const encoder = new TextEncoder();
+                    try {
+                        for await (const chunk of result.stream) {
+                            controller.enqueue(encoder.encode(chunk.text()));
                         }
-                    },
-                });
-
-                return new Response(stream, {
-                    headers: {
-                        'Content-Type': 'text/plain; charset=utf-8',
-                        'Transfer-Encoding': 'chunked',
-                    },
-                });
-
-            } catch (error: any) {
-                console.error(`Gemini Model ${modelName} Error:`, error);
-                lastError = error;
-                // 한도 초과(429/503 등) 시 다음 모델 시도
-                continue;
-            }
-        }
-
-        // 모든 모델 실패 시 데이터가 있으면 폴백 반환
-        if (publicDataItems.length > 0 || largeWasteItems.length > 0) {
-            return NextResponse.json({
-                resultType: 'list',
-                response: {
-                    body: {
-                        items: [...publicDataItems, ...largeWasteItems]
-                    }
-                }
+                        controller.close();
+                    } catch (e) { controller.error(e); }
+                },
             });
+
+            return new Response(stream, {
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Transfer-Encoding': 'chunked' },
+            });
+
+        } catch (error: any) {
+            console.error(`Gemini Model ${modelName} Error:`, error);
+            lastError = error;
+            continue;
         }
-
-        // 데이터도 없고 AI도 실패한 경우 최종 에러
-        const errorMessage = lastError?.status === 503 || lastError?.message?.includes('503') || lastError?.status === 429
-            ? '인공지능 서비스가 현재 매우 혼잡합니다. 잠시 후 다시 시도해 주세요.'
-            : '인공지능 서비스 연결 중에 오류가 발생했습니다.';
-
-        return NextResponse.json({
-            error: errorMessage,
-            message: '죄송해요, 관련 정보를 찾을 수 없고 인공지능 연결도 원활하지 않아요. 잠시 후 다시 시도해주세요. 💦'
-        }, { status: 500 });
     }
 
-    return NextResponse.json({ error: 'Gemini API key is missing' }, { status: 500 });
+    // 폴백
+    if (publicDataItems.length > 0 || largeWasteItems.length > 0) {
+        return NextResponse.json({
+            resultType: 'list',
+            items: [...publicDataItems, ...largeWasteItems]
+        });
+    }
+
+    const fallbackMsg = lastError?.status === 503 || lastError?.message?.includes('503') || lastError?.status === 429
+        ? '서비스가 매우 혼잡합니다. 잠시 후 시도해 주세요.'
+        : '오류가 발생했습니다.';
+
+    return NextResponse.json({ error: fallbackMsg }, { status: 500 });
 }

@@ -24,7 +24,7 @@ export default function Calendar() {
     const [today, setToday] = useState<Date | null>(null);
     const [holidays, setHolidays] = useState<any[]>([]);
     const { location } = useLocation();
-    const { isSubscribed } = useUser();
+    const { user, isSubscribed } = useUser();
 
     // 알림 설정 상태 (상세 설정 포함)
     const [notificationSettings, setNotificationSettings] = useState({
@@ -46,21 +46,36 @@ export default function Calendar() {
     });
 
     useEffect(() => {
-        const saved = localStorage.getItem('notificationSettings');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed && typeof parsed === 'object') {
-                    setNotificationSettings(prev => ({ ...prev, ...parsed }));
+        const loadSettings = async () => {
+            const saved = localStorage.getItem('notificationSettings');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed === 'object') {
+                        setNotificationSettings(prev => ({ ...prev, ...parsed }));
+                    }
+                } catch (e) {
+                    console.error("Failed to parse settings", e);
                 }
-            } catch (e) {
-                console.error("Failed to parse settings", e);
-            }
-        }
-        setToday(new Date());
-    }, []);
+            } else if (user && supabase) {
+                // DB에서 가져오기
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('notification_settings')
+                    .eq('id', user.id)
+                    .single();
 
-    const { user } = useUser();
+                if (!error && data?.notification_settings) {
+                    setNotificationSettings(data.notification_settings);
+                    localStorage.setItem('notificationSettings', JSON.stringify(data.notification_settings));
+                }
+            }
+        };
+
+        loadSettings();
+        setToday(new Date());
+    }, [user]);
+
 
     const saveSettings = async (newSettings: typeof notificationSettings) => {
         setNotificationSettings(newSettings);
