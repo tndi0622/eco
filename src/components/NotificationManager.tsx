@@ -30,7 +30,15 @@ export default function NotificationManager() {
             // 설정 로드
             const saved = localStorage.getItem('notificationSettings');
             if (!saved) return;
-            const settings: NotificationSettings = JSON.parse(saved);
+
+            let settings: NotificationSettings;
+            try {
+                settings = JSON.parse(saved);
+                if (!settings || typeof settings !== 'object') return;
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+                return;
+            }
 
             // 시간 파싱 헬퍼: "18:00" -> 18, 0
             const parseTime = (timeStr?: string) => {

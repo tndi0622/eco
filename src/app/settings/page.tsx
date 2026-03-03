@@ -55,7 +55,14 @@ export default function Settings() {
     useEffect(() => {
         const saved = localStorage.getItem('notificationSettings');
         if (saved) {
-            setNotificationSettings(JSON.parse(saved));
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object') {
+                    setNotificationSettings(prev => ({ ...prev, ...parsed }));
+                }
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+            }
         }
     }, []);
 
@@ -125,10 +132,10 @@ export default function Settings() {
 
                     // 2. 스케줄러 정보 설정
                     // 포맷 헬퍼: "매일 19:00" 또는 "화,목 전날 20:00"
-                    const formatSchedule = (days: string, time: string) => {
-                        if (!days) return '정보 없음';
-                        const cleanTime = time ? time.split('~')[0].trim() : '19:00'; // 시작 시간 가져오기
-                        // 시간 형식이 "18:00~24:00"인 것으로 가정 -> "18:00"
+                    const formatSchedule = (days: any, time: any) => {
+                        if (!days || typeof days !== 'string') return '정보 없음';
+                        const timeStr = typeof time === 'string' ? time : '19:00';
+                        const cleanTime = timeStr.includes('~') ? timeStr.split('~')[0].trim() : timeStr.trim();
 
                         if (days.includes('매일')) return `매일 ${cleanTime} 알림`;
                         return `${days} 전날 ${cleanTime} 알림`;
@@ -360,7 +367,7 @@ export default function Settings() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
                                 <div className={styles.notiLabel}>{item.label}</div>
                                 <Toggle
-                                    active={(notificationSettings as any)[item.key]}
+                                    active={!!(notificationSettings as any)[item.key]}
                                     onClick={() => handleToggleNotification(item.key as any)}
                                 />
                             </div>
@@ -370,7 +377,7 @@ export default function Settings() {
                                     {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
                                         <button
                                             key={idx}
-                                            className={`${styles.dayBtn} ${(notificationSettings as any)[item.daysKey].includes(idx) ? styles.dayBtnActive : ''}`}
+                                            className={`${styles.dayBtn} ${(Array.isArray((notificationSettings as any)[item.daysKey]) && (notificationSettings as any)[item.daysKey].includes(idx)) ? styles.dayBtnActive : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDayToggle(item.key as any, idx);
