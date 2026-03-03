@@ -146,6 +146,32 @@ function ChatContent() {
                         avatarUrl: MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)],
                         isError: false
                     });
+                } else if (data.resultType === 'list') {
+                    // 데이터 리스트 폴백
+                    const items = data.response?.body?.items || [];
+                    const content = items.length > 0
+                        ? `"${data.identifiedItem || '사진 속 물체'}"에 대해 찾은 검색 결과입니다:`
+                        : `"${data.identifiedItem || '사진 속 물체'}"에 대한 정확한 정보를 찾지 못했습니다.`;
+
+                    addMessage({
+                        id: Date.now() + Math.random(),
+                        type: 'bot',
+                        content: (
+                            <div>
+                                <p style={{ marginBottom: '12px' }}>{content}</p>
+                                {items.slice(0, 5).map((item: any, idx: number) => (
+                                    <div key={idx} style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '8px', marginBottom: '8px', fontSize: '0.9rem' }}>
+                                        <strong>{item.itemNm || item.larWasNm}</strong>
+                                        <p style={{ marginTop: '4px', color: '#666' }}>{item.dschgMthd || `${item.fee}원`}</p>
+                                    </div>
+                                ))}
+                                {items.length === 0 && <p style={{ color: '#888', fontSize: '0.85rem' }}>다른 이름으로 검색하거나 직접 문의해 주세요. ☎ 120</p>}
+                            </div>
+                        ),
+                        source: '정보 제공: 기후에너지환경부, 한국환경공단',
+                        avatarUrl: MASCOT_IMAGES[0],
+                        isError: false
+                    });
                 }
             } else {
                 // 텍스트 요청 (스트리밍)

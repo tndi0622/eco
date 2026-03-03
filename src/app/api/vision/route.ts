@@ -54,9 +54,10 @@ export async function POST(request: Request) {
     }
 
     if (!query) {
+        console.error("Identification failed for all models. Last Error:", lastIdentificationError);
         const errorMessage = lastIdentificationError?.status === 503 || lastIdentificationError?.message?.includes('503') || lastIdentificationError?.status === 429
             ? 'AI 서비스가 현재 매우 혼잡하여 품목 식별에 실패했습니다.'
-            : '사진에서 품목을 식별하는 도중 오류가 발생했습니다.';
+            : `사진에서 품목을 식별하는 도중 오류가 발생했습니다. (${lastIdentificationError?.message || 'Unknown Error'})`;
         return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 
@@ -65,8 +66,18 @@ export async function POST(request: Request) {
 
     const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
         (async () => {
-            const url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
-            return getItems(await fetchWithTimeout(url));
+            let url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
+            let res = await fetchWithTimeout(url);
+            let items = getItems(res);
+
+            // 검색 결과가 없으면 공백 제거 후 재시도
+            if (items.length === 0 && query.includes(' ')) {
+                const noSpaceQuery = query.replace(/\s+/g, '');
+                url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(noSpaceQuery)}&type=json`;
+                res = await fetchWithTimeout(url);
+                items = getItems(res);
+            }
+            return items;
         })(),
         (async () => {
             if (!sido) return [];
