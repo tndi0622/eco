@@ -516,16 +516,9 @@ function ChatContent() {
             <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 ref={fileInputRef}
                 style={{
-                    position: 'absolute',
-                    opacity: 0,
-                    width: 1,
-                    height: 1,
-                    top: -100,
-                    left: -100,
-                    pointerEvents: 'none'
+                    display: 'none'
                 }}
                 onChange={handleImageUpload}
             />
