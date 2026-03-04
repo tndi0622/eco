@@ -194,7 +194,10 @@ export default function Home() {
           )}
 
           <form onSubmit={handleSearch} className={styles.searchFormMinimal}>
-            <button type="button" className={styles.iconBtnLeft} onClick={() => fileInputRef.current?.click()}>
+            <button type="button" className={styles.iconBtnLeft} onClick={() => {
+              console.log('Mobile Bridge: Photo button clicked');
+              fileInputRef.current?.click();
+            }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                 <circle cx="12" cy="13" r="4"></circle>
@@ -219,7 +222,25 @@ export default function Home() {
 
           {/* 검색어 섹션 제거됨 */}
 
-          <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            ref={fileInputRef}
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              width: 1,
+              height: 1,
+              top: -100,
+              left: -100,
+              pointerEvents: 'none'
+            }}
+            onChange={(e) => {
+              console.log('Mobile Bridge: Input context onChange triggered');
+              handlePhotoUpload(e);
+            }}
+          />
         </section>
 
 

@@ -312,14 +312,24 @@ function ChatContent() {
     };
 
     const handleImageClick = () => {
+        console.log('Mobile Bridge: Chat Photo button clicked');
         setShowAttachMenu(false);
-        fileInputRef.current?.click();
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        } else {
+            console.error('Mobile Bridge: fileInputRef is null');
+        }
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('Mobile Bridge: handleImageUpload triggered');
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file) {
+            console.log('Mobile Bridge: No file selected');
+            return;
+        }
 
+        console.log('Mobile Bridge: File selected:', file.name, file.size);
         if (!isSubscribed && tokens < 2 && !isAdmin) {
             setShowTokenModal(true);
             return;
@@ -329,7 +339,9 @@ function ChatContent() {
 
         try {
             // 사진의 경우 용량이 매우 클 수 있으므로 압축
+            console.log('Mobile Bridge: Compressing image...');
             const base64 = await compressImage(file);
+            console.log('Mobile Bridge: Compression complete. Length:', base64.length);
 
             const hasToken = await useToken(2);
             if (hasToken) {
@@ -354,13 +366,16 @@ function ChatContent() {
                     });
 
                     fetchRecycleInfo("image", base64Data, mimeType);
+                } else {
+                    console.error('Mobile Bridge: Invalid base64 format');
                 }
             } else {
+                console.warn('Mobile Bridge: Insufficient tokens');
                 setShowTokenModal(true);
                 setIsThinking(false);
             }
         } catch (error: any) {
-            console.error("Image Upload Error:", error);
+            console.error("Mobile Bridge: Image Upload Error:", error);
             alert(error.message || "이미지를 처리하는 중 오류가 발생했습니다.");
             setIsThinking(false);
         }
@@ -376,9 +391,9 @@ function ChatContent() {
 
             const pendingImage = localStorage.getItem('pendingImage');
             if (pendingImage) {
-                console.log('Found pending image in localStorage. Processing...');
+                console.log('Mobile Bridge: Found pending image in localStorage. Processing...');
                 if (!isSubscribed && tokens < 2 && !isAdmin) {
-                    console.log('Insufficient tokens for pending image');
+                    console.warn('Mobile Bridge: Insufficient tokens for pending image');
                     setShowTokenModal(true);
                     localStorage.removeItem('pendingImage');
                     return;
@@ -387,7 +402,7 @@ function ChatContent() {
                 setIsThinking(true);
 
                 try {
-                    console.log('Requesting 2 tokens for photo analysis...');
+                    console.log('Mobile Bridge: Requesting 2 tokens for photo analysis...');
                     const hasToken = await useToken(2);
                     if (hasToken) {
                         const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
@@ -395,7 +410,7 @@ function ChatContent() {
                             const mimeType = matches[1];
                             const base64Data = matches[2];
 
-                            console.log('Sending pending image to API. MimeType:', mimeType, 'Length:', base64Data.length);
+                            console.log('Mobile Bridge: Sending pending image to API. MimeType:', mimeType, 'Length:', base64Data.length);
                             addMessage({
                                 id: Date.now(),
                                 type: 'user',
@@ -413,20 +428,20 @@ function ChatContent() {
 
                             fetchRecycleInfo("image", base64Data, mimeType);
                         } else {
-                            console.error('Invalid image data format in localStorage');
+                            console.error('Mobile Bridge: Invalid image data format in localStorage');
                         }
                     } else {
-                        console.warn('Token check failed: User has less than 2 tokens.');
+                        console.warn('Mobile Bridge: Token check failed: User has less than 2 tokens.');
                         setShowTokenModal(true);
                         setIsThinking(false);
                     }
                 } catch (error) {
-                    console.error("Critical Pending Image Error:", error);
+                    console.error("Mobile Bridge: Critical Pending Image Error:", error);
                     setIsThinking(false);
                 }
                 localStorage.removeItem('pendingImage');
             } else {
-                console.log('No pending image found in localStorage.');
+                console.log('Mobile Bridge: No pending image found in localStorage.');
             }
         };
 
@@ -501,8 +516,17 @@ function ChatContent() {
             <input
                 type="file"
                 accept="image/*"
+                capture="environment"
                 ref={fileInputRef}
-                style={{ display: 'none' }}
+                style={{
+                    position: 'absolute',
+                    opacity: 0,
+                    width: 1,
+                    height: 1,
+                    top: -100,
+                    left: -100,
+                    pointerEvents: 'none'
+                }}
                 onChange={handleImageUpload}
             />
 
