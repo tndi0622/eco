@@ -34,16 +34,27 @@ export default function Home() {
   const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('Photo upload started:', file.name, file.size, file.type);
       setIsProcessing(true);
       try {
         // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
         // File 객체를 직접 전달하여 메모리 효율성 개선
+        console.log('Compressing image...');
         const compressedBase64 = await compressImage(file);
-        localStorage.setItem('pendingImage', compressedBase64);
-        router.push('/chat');
+        console.log('Compression complete. Base64 length:', compressedBase64.length);
+
+        try {
+          localStorage.setItem('pendingImage', compressedBase64);
+          console.log('Saved to localStorage successfully. Redirecting to /chat...');
+          router.push('/chat');
+        } catch (storageErr) {
+          console.error('LocalStorage Save Error (Quota exceeded?):', storageErr);
+          alert('사진 용량이 너무 커서 임시 저장에 실패했습니다. 사진 품질을 조절하거나 다시 시도해 주세요.');
+          setIsProcessing(false);
+        }
       } catch (err) {
-        console.error('Photo Upload Error:', err);
-        alert('이미지를 처리하는 중 오류가 발생했습니다. 나중에 다시 시도해 주세요.');
+        console.error('Photo Process/Compress Error:', err);
+        alert('이미지를 처리하는 중 오류가 발생했습니다: ' + (err as Error).message);
         setIsProcessing(false);
       }
     }

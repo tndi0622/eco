@@ -34,6 +34,7 @@ export async function POST(request: Request) {
 
     for (const modelName of AVAILABLE_GEMINI_MODELS) {
         try {
+            console.log(`Attempting identification with model: ${modelName}`);
             const model = genAI.getGenerativeModel({ model: modelName });
             const identificationPrompt = `
                 Analyze this image and identify the main waste item.
@@ -42,13 +43,17 @@ export async function POST(request: Request) {
             `;
 
             const idResult = await model.generateContent([identificationPrompt, imagePart]);
-            const text = idResult.response.text().trim();
+            const response = await idResult.response;
+            const text = response.text().trim();
+
+            console.log(`Model ${modelName} identified item: ${text}`);
             if (text) {
                 query = text;
                 break;
             }
         } catch (e: any) {
             console.error(`Identification Model ${modelName} Error:`, e);
+            console.error(`Error details: ${e.message || 'No message'}, Status: ${e.status || 'No status'}`);
             lastIdentificationError = e;
         }
     }
@@ -58,7 +63,11 @@ export async function POST(request: Request) {
         const errorMessage = lastIdentificationError?.status === 503 || lastIdentificationError?.message?.includes('503') || lastIdentificationError?.status === 429
             ? 'AI 서비스가 현재 매우 혼잡하여 품목 식별에 실패했습니다.'
             : `사진에서 품목을 식별하는 도중 오류가 발생했습니다. (${lastIdentificationError?.message || 'Unknown Error'})`;
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        return NextResponse.json({
+            error: errorMessage,
+            details: lastIdentificationError?.message,
+            modelsAttempted: AVAILABLE_GEMINI_MODELS
+        }, { status: 500 });
     }
 
     // --- 2단계: 공공데이터 가져오기 (병렬) ---

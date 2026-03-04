@@ -39,7 +39,7 @@ declare global {
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [tokens, setTokens] = useState<number>(1);
+    const [tokens, setTokens] = useState<number>(5); // Increased for testing and new users (was 1)
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
     const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);

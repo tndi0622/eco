@@ -376,7 +376,9 @@ function ChatContent() {
 
             const pendingImage = localStorage.getItem('pendingImage');
             if (pendingImage) {
+                console.log('Found pending image in localStorage. Processing...');
                 if (!isSubscribed && tokens < 2 && !isAdmin) {
+                    console.log('Insufficient tokens for pending image');
                     setShowTokenModal(true);
                     localStorage.removeItem('pendingImage');
                     return;
@@ -385,6 +387,7 @@ function ChatContent() {
                 setIsThinking(true);
 
                 try {
+                    console.log('Requesting 2 tokens for photo analysis...');
                     const hasToken = await useToken(2);
                     if (hasToken) {
                         const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
@@ -392,6 +395,7 @@ function ChatContent() {
                             const mimeType = matches[1];
                             const base64Data = matches[2];
 
+                            console.log('Sending pending image to API. MimeType:', mimeType, 'Length:', base64Data.length);
                             addMessage({
                                 id: Date.now(),
                                 type: 'user',
@@ -408,16 +412,21 @@ function ChatContent() {
                             });
 
                             fetchRecycleInfo("image", base64Data, mimeType);
+                        } else {
+                            console.error('Invalid image data format in localStorage');
                         }
                     } else {
+                        console.warn('Token check failed: User has less than 2 tokens.');
                         setShowTokenModal(true);
                         setIsThinking(false);
                     }
                 } catch (error) {
-                    console.error("Pending Image Error:", error);
+                    console.error("Critical Pending Image Error:", error);
                     setIsThinking(false);
                 }
                 localStorage.removeItem('pendingImage');
+            } else {
+                console.log('No pending image found in localStorage.');
             }
         };
 
