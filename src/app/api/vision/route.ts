@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import wasteRules from '@/data/waste_rules.json';
 import { supabase } from '@/lib/supabase';
+import { parseLocation, fetchWithTimeout, getItems, AVAILABLE_GEMINI_MODELS } from '@/lib/api-utils';
 
 export const runtime = 'edge';
 
@@ -19,9 +20,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'API Keys missing' }, { status: 500 });
     }
 
-    const availableModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"];
     const genAI = new GoogleGenerativeAI(geminiKey);
-
     let query = "";
     let lastIdentificationError: any = null;
 
@@ -33,8 +32,9 @@ export async function POST(request: Request) {
         },
     };
 
-    for (const modelName of availableModels) {
+    for (const modelName of AVAILABLE_GEMINI_MODELS) {
         try {
+            console.log(`Attempting identification with model: ${modelName}`);
             const model = genAI.getGenerativeModel({ model: modelName });
             const identificationPrompt = `
                 Analyze this image and identify the main waste item.
@@ -43,64 +43,50 @@ export async function POST(request: Request) {
             `;
 
             const idResult = await model.generateContent([identificationPrompt, imagePart]);
-            const text = idResult.response.text().trim();
+            const response = await idResult.response;
+            const text = response.text().trim();
+
+            console.log(`Model ${modelName} identified item: ${text}`);
             if (text) {
                 query = text;
                 break;
             }
         } catch (e: any) {
             console.error(`Identification Model ${modelName} Error:`, e);
+            console.error(`Error details: ${e.message || 'No message'}, Status: ${e.status || 'No status'}`);
             lastIdentificationError = e;
         }
     }
 
     if (!query) {
+        console.error("Identification failed for all models. Last Error:", lastIdentificationError);
         const errorMessage = lastIdentificationError?.status === 503 || lastIdentificationError?.message?.includes('503') || lastIdentificationError?.status === 429
             ? 'AI 서비스가 현재 매우 혼잡하여 품목 식별에 실패했습니다.'
-            : '사진에서 품목을 식별하는 도중 오류가 발생했습니다.';
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+            : `사진에서 품목을 식별하는 도중 오류가 발생했습니다. (${lastIdentificationError?.message || 'Unknown Error'})`;
+        return NextResponse.json({
+            error: errorMessage,
+            details: lastIdentificationError?.message,
+            modelsAttempted: AVAILABLE_GEMINI_MODELS
+        }, { status: 500 });
     }
 
     // --- 2단계: 공공데이터 가져오기 (병렬) ---
-    const parseLocation = (loc: string | null) => {
-        if (!loc || loc.includes('위치')) return { sido: '', sigungu: '', dong: '' };
-        const parts = loc.split(' ');
-        return {
-            sido: parts[0] || '',
-            sigungu: parts[1] || '',
-            dong: parts[2] || ''
-        };
-    };
-
     const { sido, sigungu, dong } = parseLocation(location);
-
-    const fetchWithTimeout = async (url: string, ms: number = 2500) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), ms);
-        try {
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (!res.ok) throw new Error(`Status ${res.status}`);
-            return await res.json();
-        } catch (e) {
-            clearTimeout(timeoutId);
-            throw e;
-        }
-    };
-
-    const getItems = (data: any) => {
-        if (!data?.response?.body?.items) return [];
-        const rawItems = data.response.body.items;
-        if (Array.isArray(rawItems)) return rawItems;
-        if (Array.isArray(rawItems?.item)) return rawItems.item;
-        if (rawItems?.item) return [rawItems.item];
-        return [];
-    };
 
     const [publicDataResult, collectionDataResult, largeWasteResult, wasteBagResult, foodWasteResult] = await Promise.allSettled([
         (async () => {
-            const url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
-            return getItems(await fetchWithTimeout(url));
+            let url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(query)}&type=json`;
+            let res = await fetchWithTimeout(url);
+            let items = getItems(res);
+
+            // 검색 결과가 없으면 공백 제거 후 재시도
+            if (items.length === 0 && query.includes(' ')) {
+                const noSpaceQuery = query.replace(/\s+/g, '');
+                url = `https://apis.data.go.kr/1482000/WasteRecyclingService/getRecycleList?serviceKey=${apiKey}&pageNo=1&numOfRows=10&itmNm=${encodeURIComponent(noSpaceQuery)}&type=json`;
+                res = await fetchWithTimeout(url);
+                items = getItems(res);
+            }
+            return items;
         })(),
         (async () => {
             if (!sido) return [];
@@ -139,11 +125,11 @@ export async function POST(request: Request) {
     if (sido) {
         try {
             if (supabase) {
-                const { data, error } = await supabase.from('waste_rules').select('*').ilike('sido', `%${sido}%`).ilike('sigungu', `%${sigungu}%`);
+                const { data, error } = await supabase.from('waste_rules').select('*').ilike('sido', `%${sido.substring(0, 2)}%`).ilike('sigungu', `%${sigungu}%`);
                 if (!error && data) wasteInfoItems = data;
             }
             if (wasteInfoItems.length === 0) {
-                wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido) && rule.sigungu.includes(sigungu));
+                wasteInfoItems = (wasteRules as any[]).filter((rule: any) => rule.sido.includes(sido.substring(0, 2)) && rule.sigungu.includes(sigungu));
             }
             if (dong && wasteInfoItems.length > 1) {
                 wasteInfoItems.sort((a, b) => {
@@ -158,7 +144,7 @@ export async function POST(request: Request) {
     // --- 3단계: 최종 답변 생성 (Gemini) ---
     let lastSummaryError: any = null;
 
-    for (const modelName of availableModels) {
+    for (const modelName of AVAILABLE_GEMINI_MODELS) {
         try {
             const model = genAI.getGenerativeModel({ model: modelName });
 
@@ -184,8 +170,6 @@ export async function POST(request: Request) {
                 3. 데이터가 없다면 상식 수준에서 가장 중요한 포인트만 2~3문장 이내로 설명하세요.
                 4. 답변 끝에 반드시 "정보 제공: 기후에너지환경부, 한국환경공단, 한국지능정보사회진흥원"을 명시하세요.
                 5. 이모지는 문장 끝에만 1~2개 사용해 주세요.
-                
-                최대 8~10문장 이내로 작성하세요.
             `;
 
             const finalResult = await model.generateContent([finalPrompt, imagePart]);

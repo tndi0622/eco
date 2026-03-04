@@ -11,6 +11,7 @@ import ChatSkeleton from './ChatSkeleton';
 import FormattedText from '@/components/FormattedText';
 import Image from 'next/image';
 import { useUser } from '@/context/UserContext';
+import { getJosa, extractKeyword, compressImage } from '@/lib/utils';
 
 const MASCOT_IMAGES = [
     '/images/eco_mascot_thinking.png',
@@ -72,7 +73,7 @@ function ChatContent() {
     const [showTokenModal, setShowTokenModal] = useState(false);
     const [isAdLoading, setIsAdLoading] = useState(false);
 
-    const { tokens, isSubscribed, isAdmin, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
+    const { tokens, isSubscribed, isAdmin, loading, adTokensToday, useToken, addAdToken, purchaseTokens, subscribe } = useUser();
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         // DOM이 업데이트되고 렌더링되었는지 확인하기 위해 약간의 타임아웃 사용
@@ -109,37 +110,7 @@ function ChatContent() {
         setWelcomeMascot(randomMascot);
     }, []);
 
-    const getJosa = (word: string, josa: '은/는' | '이/가' | '을/를') => {
-        if (!word) return '';
-        let lastCharIndex = word.length - 1;
-        while (lastCharIndex >= 0) {
-            const code = word.charCodeAt(lastCharIndex);
-            if (code >= 0xAC00 && code <= 0xD7A3) break;
-            lastCharIndex--;
-        }
-        if (lastCharIndex < 0) return josa;
-        const lastCharCode = word.charCodeAt(lastCharIndex);
-        const hasBatchim = (lastCharCode - 0xAC00) % 28 > 0;
-        if (josa === '은/는') return hasBatchim ? '은' : '는';
-        if (josa === '이/가') return hasBatchim ? '이' : '가';
-        if (josa === '을/를') return hasBatchim ? '을' : '를';
-        return josa;
-    };
-
-    const extractKeyword = (text: string) => {
-        let cleanText = text.replace(/[?.!,]/g, '').trim();
-        let modifier: string | null = null;
-        if (cleanText.includes('묻은') || cleanText.includes('더러운') || cleanText.includes('음식물') || cleanText.includes('이물질')) modifier = 'dirty';
-        else if (cleanText.includes('깨진') || cleanText.includes('파손된')) modifier = 'broken';
-        else if (cleanText.includes('액체') || cleanText.includes('남은') || cleanText.includes('내용물')) modifier = 'liquid';
-        else if (cleanText.includes('기름')) modifier = 'oil';
-
-        const removePhrases = ['어떻게 버려요', '어떻게 버리나요', '어떻게 버려', '어떻게 처리해요', '버리는 법', '버리는 방법', '버리는법', '배출 방법', '배출법', '알려줘', '알려주세요', '어떻게', '버려요', '버려', '요', '처리', '수거', '폐기'];
-        for (const phrase of removePhrases) {
-            if (cleanText.endsWith(phrase)) cleanText = cleanText.substring(0, cleanText.length - phrase.length).trim();
-        }
-        return { keyword: cleanText, modifier };
-    };
+    // (utils.ts로 이동됨)
 
     // 이미지를 처리할 수 있도록 업데이트된 fetch 함수
     const fetchRecycleInfo = async (queryMock: string, imageBase64?: string, mimeType?: string) => {
@@ -173,6 +144,32 @@ function ChatContent() {
                         content: <div style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}><FormattedText text={data.message} /></div>,
                         source: '제공: 에코 이미지 분석 서비스',
                         avatarUrl: MASCOT_IMAGES[Math.floor(Math.random() * MASCOT_IMAGES.length)],
+                        isError: false
+                    });
+                } else if (data.resultType === 'list') {
+                    // 데이터 리스트 폴백
+                    const items = data.response?.body?.items || [];
+                    const content = items.length > 0
+                        ? `"${data.identifiedItem || '사진 속 물체'}"에 대해 찾은 검색 결과입니다:`
+                        : `"${data.identifiedItem || '사진 속 물체'}"에 대한 정확한 정보를 찾지 못했습니다.`;
+
+                    addMessage({
+                        id: Date.now() + Math.random(),
+                        type: 'bot',
+                        content: (
+                            <div>
+                                <p style={{ marginBottom: '12px' }}>{content}</p>
+                                {items.slice(0, 5).map((item: any, idx: number) => (
+                                    <div key={idx} style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '8px', marginBottom: '8px', fontSize: '0.9rem' }}>
+                                        <strong>{item.itemNm || item.larWasNm}</strong>
+                                        <p style={{ marginTop: '4px', color: '#666' }}>{item.dschgMthd || `${item.fee}원`}</p>
+                                    </div>
+                                ))}
+                                {items.length === 0 && <p style={{ color: '#888', fontSize: '0.85rem' }}>다른 이름으로 검색하거나 직접 문의해 주세요. ☎ 120</p>}
+                            </div>
+                        ),
+                        source: '정보 제공: 기후에너지환경부, 한국환경공단',
+                        avatarUrl: MASCOT_IMAGES[0],
                         isError: false
                     });
                 }
@@ -257,6 +254,7 @@ function ChatContent() {
 
     const handleVoiceInput = () => {
         setShowAttachMenu(false); // 선택 시 메뉴 닫기
+
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
             return;
@@ -270,7 +268,14 @@ function ChatContent() {
         recognition.maxAlternatives = 1;
 
         setIsListening(true);
-        recognition.start();
+
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Speech Recognition Start Error:", e);
+            setIsListening(false);
+            return;
+        }
 
         recognition.onresult = (event: any) => {
             const speechResult = event.results[0][0].transcript;
@@ -282,10 +287,20 @@ function ChatContent() {
         recognition.onerror = (event: any) => {
             console.error("Speech Error", event.error);
             setIsListening(false);
+
             if (event.error === 'not-allowed') {
-                alert("마이크 권한이 필요합니다. 브라우저 주소창 옆의 자물쇠 아이콘을 눌러 마이크 허용을 해주세요. 🎤");
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+                const isWebView = /wv|Webview/i.test(navigator.userAgent);
+
+                if (isWebView) {
+                    alert("앱의 마이크 권한이 꺼져 있거나 웹뷰에서 차단되었습니다.\n\n해결 방법:\n1. 휴대폰 [설정 > 애플리케이션 > 에코(앱 이름) > 권한]\n2. '마이크' 권한을 '허용'으로 변경해 주세요. 🎤");
+                } else if (isIOS) {
+                    alert("마이크 사용 권한이 필요합니다.\n\n해결 방법:\n1. Safari 주소창 'AA' 아이콘 클릭\n2. [웹 사이트 설정] 메뉴 선택\n3. 마이크 권한을 '허용'으로 변경해 주세요. 🎤");
+                } else {
+                    alert("마이크 권한이 필요합니다. 브라우저 설정에서 마이크 허용을 눌러주세요. 🎤");
+                }
             } else if (event.error === 'no-speech') {
-                // 사용자가 아무 말도 하지 않은 경우, 조용히 리셋하거나 가벼운 토스트 메시지 표시
+                // 무시
             } else {
                 alert("음성 인식 오류: " + event.error);
             }
@@ -296,23 +311,37 @@ function ChatContent() {
         };
     };
 
-    const handleCameraClick = () => {
+    const handleImageClick = () => {
+        console.log('Mobile Bridge: Chat Photo button clicked');
         setShowAttachMenu(false);
-        fileInputRef.current?.click();
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        } else {
+            console.error('Mobile Bridge: fileInputRef is null');
+        }
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('Mobile Bridge: handleImageUpload triggered');
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file) {
+            console.log('Mobile Bridge: No file selected');
+            return;
+        }
 
+        console.log('Mobile Bridge: File selected:', file.name, file.size);
         if (!isSubscribed && tokens < 2 && !isAdmin) {
             setShowTokenModal(true);
             return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64 = reader.result as string;
+        setIsThinking(true); // 압축 전 로딩 표시
+
+        try {
+            // 사진의 경우 용량이 매우 클 수 있으므로 압축
+            console.log('Mobile Bridge: Compressing image...');
+            const base64 = await compressImage(file);
+            console.log('Mobile Bridge: Compression complete. Length:', base64.length);
 
             const hasToken = await useToken(2);
             if (hasToken) {
@@ -337,58 +366,87 @@ function ChatContent() {
                     });
 
                     fetchRecycleInfo("image", base64Data, mimeType);
+                } else {
+                    console.error('Mobile Bridge: Invalid base64 format');
                 }
             } else {
+                console.warn('Mobile Bridge: Insufficient tokens');
                 setShowTokenModal(true);
+                setIsThinking(false);
             }
-        };
-        reader.readAsDataURL(file);
+        } catch (error: any) {
+            console.error("Mobile Bridge: Image Upload Error:", error);
+            alert(error.message || "이미지를 처리하는 중 오류가 발생했습니다.");
+            setIsThinking(false);
+        }
+
         e.target.value = '';
     };
 
+    // ... scroll effect ...
+
     useEffect(() => {
         const processPendingImage = async () => {
-            const pendingImage = sessionStorage.getItem('pendingImage');
+            if (loading) return; // 유저 데이터가 아직 로딩 중이면 기다림
+
+            const pendingImage = localStorage.getItem('pendingImage');
             if (pendingImage) {
+                console.log('Mobile Bridge: Found pending image in localStorage. Processing...');
                 if (!isSubscribed && tokens < 2 && !isAdmin) {
+                    console.warn('Mobile Bridge: Insufficient tokens for pending image');
                     setShowTokenModal(true);
-                    sessionStorage.removeItem('pendingImage');
+                    localStorage.removeItem('pendingImage');
                     return;
                 }
 
-                const hasToken = await useToken(2);
-                if (hasToken) {
-                    const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
-                    if (matches) {
-                        const mimeType = matches[1];
-                        const base64Data = matches[2];
+                setIsThinking(true);
 
-                        addMessage({
-                            id: Date.now(),
-                            type: 'user',
-                            content: (
-                                <div>
-                                    <img
-                                        src={pendingImage}
-                                        alt="Uploaded Waste"
-                                        style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                                    />
-                                    <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
-                                </div>
-                            )
-                        });
+                try {
+                    console.log('Mobile Bridge: Requesting 2 tokens for photo analysis...');
+                    const hasToken = await useToken(2);
+                    if (hasToken) {
+                        const matches = pendingImage.match(/^data:(.+);base64,(.+)$/);
+                        if (matches) {
+                            const mimeType = matches[1];
+                            const base64Data = matches[2];
 
-                        fetchRecycleInfo("image", base64Data, mimeType);
+                            console.log('Mobile Bridge: Sending pending image to API. MimeType:', mimeType, 'Length:', base64Data.length);
+                            addMessage({
+                                id: Date.now(),
+                                type: 'user',
+                                content: (
+                                    <div>
+                                        <img
+                                            src={pendingImage}
+                                            alt="Uploaded Waste"
+                                            style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                                        />
+                                        <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                                    </div>
+                                )
+                            });
+
+                            fetchRecycleInfo("image", base64Data, mimeType);
+                        } else {
+                            console.error('Mobile Bridge: Invalid image data format in localStorage');
+                        }
+                    } else {
+                        console.warn('Mobile Bridge: Token check failed: User has less than 2 tokens.');
+                        setShowTokenModal(true);
+                        setIsThinking(false);
                     }
-                } else {
-                    setShowTokenModal(true);
+                } catch (error) {
+                    console.error("Mobile Bridge: Critical Pending Image Error:", error);
+                    setIsThinking(false);
                 }
-                sessionStorage.removeItem('pendingImage');
+                localStorage.removeItem('pendingImage');
+            } else {
+                console.log('Mobile Bridge: No pending image found in localStorage.');
             }
         };
 
         processPendingImage();
-    }, [tokens, isSubscribed, isAdmin]);
+    }, [tokens, isSubscribed, isAdmin, loading]);
 
     useEffect(() => {
         const query = searchParams.get('q');
@@ -459,7 +517,9 @@ function ChatContent() {
                 type="file"
                 accept="image/*"
                 ref={fileInputRef}
-                style={{ display: 'none' }}
+                style={{
+                    display: 'none'
+                }}
                 onChange={handleImageUpload}
             />
 
@@ -523,18 +583,41 @@ function ChatContent() {
                     ))
                 )}
                 {isThinking && <ChatSkeleton avatarUrl={loadingMascot} />}
-                {isListening && <div className={styles.listeningOverlay}>🎤 듣고 있어요...</div>}
+                {isListening && (
+                    <div className={styles.listeningOverlay}>
+                        <div className={styles.listeningTitle}>듣고 있습니다</div>
+                        <div className={styles.waveContainer}>
+                            <div className={styles.wave}></div>
+                            <div className={styles.wave}></div>
+                            <div className={styles.wave}></div>
+                            <div className={styles.wave}></div>
+                            <div className={styles.wave}></div>
+                        </div>
+                        <div className={styles.micCircle}>
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                <line x1="12" y1="19" x2="12" y2="23" />
+                                <line x1="8" y1="23" x2="16" y2="23" />
+                            </svg>
+                        </div>
+                        <p className={styles.listeningHint}>말씀이 끝나면 자동으로 분석을 시작합니다</p>
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
             <div className={styles.inputArea}>
                 <div className={`${styles.attachMenu} ${showAttachMenu ? styles.show : ''}`}>
-                    <button type="button" className={styles.attachBtn} onClick={handleCameraClick}>
+                    <button type="button" className={styles.attachBtn} onClick={handleImageClick}>
                         <div className={styles.attachIconCircle}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27AE60" strokeWidth="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                            </svg>
                         </div>
                         <div className={styles.attachLabelWrapper}>
-                            <span className={styles.attachLabel}>사진</span>
+                            <span className={styles.attachLabel}>사진 분석</span>
                             <span className={styles.tokenCostTag}>2토큰</span>
                         </div>
                     </button>

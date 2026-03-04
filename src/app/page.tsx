@@ -3,10 +3,11 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
 import { useLocation } from '@/context/LocationContext';
 import { useUser } from '@/context/UserContext';
+import { compressImage } from '@/lib/utils';
 
 const SplashScreen = dynamic(() => import('@/components/SplashScreen'), { ssr: false });
 const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false });
@@ -21,46 +22,52 @@ export default function Home() {
   const { user, loginWithGoogle } = useUser();
   const router = useRouter();
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = useCallback(() => {
     localStorage.setItem('hasOnboarded', 'true');
     setShowOnboarding(false);
-  };
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const saveRecentSearch = (term: string) => {
-    // 사용자 요청에 따라 로직 제거됨
-  };
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
+      console.log('Photo upload started:', file.name, file.size, file.type);
+      setIsProcessing(true);
+      try {
+        // 사진 찍기의 경우 용량이 매우 클 수 있으므로 압축 후 저장
+        // File 객체를 직접 전달하여 메모리 효율성 개선
+        console.log('Compressing image...');
+        const compressedBase64 = await compressImage(file);
+        console.log('Compression complete. Base64 length:', compressedBase64.length);
+
         try {
-          sessionStorage.setItem('pendingImage', base64);
+          localStorage.setItem('pendingImage', compressedBase64);
+          console.log('Saved to localStorage successfully. Redirecting to /chat...');
           router.push('/chat');
-        } catch (err) {
-          console.error('Local Storage Error', err);
-          alert('이미지가 너무 큽니다. 더 작은 이미지를 선택해주세요.');
+        } catch (storageErr) {
+          console.error('LocalStorage Save Error (Quota exceeded?):', storageErr);
+          alert('사진 용량이 너무 커서 임시 저장에 실패했습니다. 사진 품질을 조절하거나 다시 시도해 주세요.');
+          setIsProcessing(false);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Photo Process/Compress Error:', err);
+        alert('이미지를 처리하는 중 오류가 발생했습니다: ' + (err as Error).message);
+        setIsProcessing(false);
+      }
     }
-    // 초기화
     e.target.value = '';
-  };
+  }, [router]);
 
 
   useEffect(() => {
-    // 스플래시 상태 확인 (탭을 열 때마다 보이지 않도록 localStorage 사용)
+    // 스플래시와 온보딩 로직 통합 관리
     const hasSeenSplash = localStorage.getItem('hasSeenSplash');
-
-    // 온보딩 상태 확인
     const hasOnboarded = localStorage.getItem('hasOnboarded');
 
-    // 이미 로그인된 경우 온보딩 건너뜀
+    // 이미 로그인된 경우 온보딩 처리
     if (user && !hasOnboarded) {
       localStorage.setItem('hasOnboarded', 'true');
     }
@@ -73,22 +80,13 @@ export default function Home() {
     }
   }, [user]);
 
-  // 플레이스홀더 로직
-  useEffect(() => {
-    setSearchPlaceholder('배출 방법이 궁금한 물품을 입력해 주세요');
-  }, []);
-
-
-  // 위치 알림 및 토스트 로직
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-
+  // 위치 알림 및 토스트 로직 최적화
   useEffect(() => {
     if (!location || location === '위치 설정이 필요합니다') {
       setShowLocationPrompt(true);
       const timer = setTimeout(() => {
         setShowToast(true);
-      }, 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     } else {
       setShowLocationPrompt(false);
@@ -96,15 +94,43 @@ export default function Home() {
     }
   }, [location]);
 
-  const handleSplashFinish = () => {
+  const handleSplashFinish = useCallback(() => {
     setShowSplash(false);
     localStorage.setItem('hasSeenSplash', 'true');
-    // 스플래시가 끝나고 아직 로그인 및 온보딩이 안 된 경우 온보딩 시작
     const hasOnboarded = localStorage.getItem('hasOnboarded');
     if (!hasOnboarded && !user) {
       setShowOnboarding(true);
     }
-  };
+  }, [user]);
+
+  const handleVoiceSearch = useCallback(() => {
+    router.push('/chat?mode=voice');
+  }, [router]);
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      router.push(`/chat?q=${encodeURIComponent(searchInput.trim())}`);
+    }
+  }, [searchInput, router]);
+
+  // 위치 알림 및 토스트 상태
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  // 위치 상태 감시 효과
+  useEffect(() => {
+    if (!location || location === '위치 설정이 필요합니다') {
+      setShowLocationPrompt(true);
+      const timer = setTimeout(() => {
+        setShowToast(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLocationPrompt(false);
+      setShowToast(false);
+    }
+  }, [location]);
 
   if (showSplash === null) return <div className={styles.containerMinimal} style={{ display: 'none' }} aria-hidden="true" />;
 
@@ -150,18 +176,6 @@ export default function Home() {
     );
   }
 
-  const handleVoiceSearch = () => {
-    router.push('/chat?mode=voice');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      saveRecentSearch(searchInput.trim());
-      router.push(`/chat?q=${encodeURIComponent(searchInput)}`);
-    }
-  };
-
   return (
     <div className={styles.containerMinimal}>
       <div className={styles.contentWrapper}>
@@ -180,7 +194,10 @@ export default function Home() {
           )}
 
           <form onSubmit={handleSearch} className={styles.searchFormMinimal}>
-            <button type="button" className={styles.iconBtnLeft} onClick={() => fileInputRef.current?.click()}>
+            <button type="button" className={styles.iconBtnLeft} onClick={() => {
+              console.log('Mobile Bridge: Photo button clicked');
+              fileInputRef.current?.click();
+            }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                 <circle cx="12" cy="13" r="4"></circle>
@@ -205,7 +222,18 @@ export default function Home() {
 
           {/* 검색어 섹션 제거됨 */}
 
-          <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{
+              display: 'none'
+            }}
+            onChange={(e) => {
+              console.log('Mobile Bridge: Input context onChange triggered');
+              handlePhotoUpload(e);
+            }}
+          />
         </section>
 
 
@@ -228,6 +256,12 @@ export default function Home() {
         </div>
         <button className={styles.toastClose} onClick={(e) => { e.stopPropagation(); setShowToast(false); }}>×</button>
       </div>
+      {isProcessing && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.spinner}></div>
+          <p>사진을 분석하기 위해 준비 중입니다...</p>
+        </div>
+      )}
     </div>
   );
 }

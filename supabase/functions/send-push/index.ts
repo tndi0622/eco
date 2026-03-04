@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { JWT } from "https://esm.sh/google-auth-library@9"
+import { createClient } from "@supabase/supabase-js"
+import { JWT } from "google-auth-library"
 
 serve(async (req: Request) => {
     const supabase = createClient(
@@ -8,66 +7,81 @@ serve(async (req: Request) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. 한국 시간(KST) 및 요일 확인
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    const currentDay = now.getDay();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    try {
+        // 1. 한국 시간(KST) 및 요일 확인
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat("en-US", {
+            timeZone: "Asia/Seoul",
+            hour12: false,
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit", second: "2-digit"
+        });
 
-    console.log(`알림 체크 시작: 요일 ${currentDay}, 시간 ${currentTime}`);
+        const parts = formatter.formatToParts(now);
+        const getPart = (type: string) => parts.find(p => p.type === type)?.value;
 
-    // 2. 알림 대상자 조회
-    const { data: users, error } = await supabase
-        .from('profiles')
-        .select('id, fcm_token, notification_settings')
-        .not('fcm_token', 'is', null);
+        const kstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+        const currentDay = kstDate.getDay();
+        const currentTime = `${getPart('hour')}:${getPart('minute')}`;
 
-    if (error || !users) {
-        console.log("알림 대상 사요아 없음 혹은 에러:", error);
-        return new Response("No users found", { status: 200 });
-    }
+        console.log(`알림 체크 시작: 요일 ${currentDay}, 시간 ${currentTime}`);
 
-    const notifications = [];
+        const { data: users, error: userError } = await supabase
+            .from('profiles')
+            .select('id, fcm_token, notification_settings')
+            .not('fcm_token', 'is', null);
 
-    for (const user of users) {
-        const s = user.notification_settings as any;
-        if (!s) continue;
+        if (userError || !users || users.length === 0) {
+            console.log("알림 대상 사용자 없음 혹은 에러:", userError);
+            return new Response(JSON.stringify({ message: "No users to notify" }), { status: 200 });
+        }
 
-        // 배출 품목별 체크
-        const tasks = [
-            { key: 'general', label: '일반 쓰레기', body: '지금은 일반 쓰레기 배출 시간입니다!' },
-            { key: 'recycle', label: '재활용', body: '지금은 재활용 쓰레기 배출 시간입니다!' },
-            { key: 'food', label: '음식물', body: '지금은 음식물 쓰레기 배출 시간입니다!' }
-        ];
+        const notifications = [];
 
-        for (const task of tasks) {
-            if (s[task.key] &&
-                s[`${task.key}Days`]?.includes(currentDay) &&
-                s[`${task.key}Time`] === currentTime) {
-                notifications.push(sendFCM(user.fcm_token, `[에코도우미] ${task.label}`, task.body));
+        for (const user of users) {
+            const s = user.notification_settings as any;
+            if (!s) continue;
+
+            const tasks = [
+                { key: 'general', label: '일반 쓰레기', body: '지금은 일반 쓰레기 배출 시간입니다!' },
+                { key: 'recycle', label: '재활용', body: '지금은 재활용 쓰레기 배출 시간입니다!' },
+                { key: 'food', label: '음식물', body: '지금은 음식물 쓰레기 배출 시간입니다!' }
+            ];
+
+            for (const task of tasks) {
+                if (s[task.key] &&
+                    s[`${task.key}Days`]?.includes(currentDay) &&
+                    s[`${task.key}Time`] === currentTime) {
+                    notifications.push(sendFCM(user.fcm_token, `[에코도우미] ${task.label}`, task.body));
+                }
             }
         }
+
+        const results = await Promise.all(notifications);
+        console.log(`알림 발송 완료: ${results.length}건`);
+
+        return new Response(JSON.stringify({ success: true, count: results.length, details: results }), {
+            headers: { "Content-Type": "application/json" },
+        })
+    } catch (err: any) { // err 타입을 any로 명시하여 'unknown' 에러 해결
+        console.error("함수 실행 중 전체 오류:", err);
+        return new Response(JSON.stringify({ error: err.message || String(err) }), { status: 500 });
     }
-
-    const results = await Promise.all(notifications);
-    console.log(`알림 발송 완료: ${results.length}건`);
-
-    return new Response(JSON.stringify({ success: true, count: results.length, details: results }), {
-        headers: { "Content-Type": "application/json" },
-    })
 })
 
-async function sendFCM(fcmToken: string, title: string, body: string) {
+async function sendFCM(fcmToken: string, title: string, body: string): Promise<any> {
     try {
-        // 환경변수에서 서비스 계정 정보 가져오기
         const clientEmail = Deno.env.get('FIREBASE_CLIENT_EMAIL');
-        const privateKey = Deno.env.get('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
+        const privateKey = Deno.env.get('FIREBASE_PRIVATE_KEY')
+            ?.replace(/\\n/g, '\n')
+            .replace(/^"(.*)"$/, '$1');
+
         const projectId = Deno.env.get('FIREBASE_PROJECT_ID');
 
         if (!clientEmail || !privateKey || !projectId) {
             throw new Error("Missing Firebase configuration in environment variables");
         }
 
-        // OAuth2 토큰 생성 (FCM v1용)
         const client = new JWT({
             email: clientEmail,
             key: privateKey,
@@ -89,25 +103,18 @@ async function sendFCM(fcmToken: string, title: string, body: string) {
                     notification: { title, body },
                     android: {
                         priority: "high",
-                        notification: {
-                            click_action: "FLUTTER_NOTIFICATION_CLICK"
-                        }
+                        notification: { click_action: "FLUTTER_NOTIFICATION_CLICK" }
                     },
                     apns: {
-                        payload: {
-                            aps: {
-                                sound: "default"
-                            }
-                        }
+                        payload: { aps: { sound: "default" } }
                     }
                 }
             })
         });
 
-        const result = await response.json();
-        return result;
-    } catch (err) {
+        return await response.json();
+    } catch (err: any) { // err 타입을 any로 명시하여 'unknown' 에러 해결
         console.error("FCM 전송 오류:", err);
-        return { error: err.message };
+        return { error: err.message || String(err) };
     }
 }

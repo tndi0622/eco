@@ -7,34 +7,62 @@
   --text-white: #FFFFFF;
   --background-white: #FFFFFF;
   --border-radius: 12px;
+
+  /* Safe area variables */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
 }
 
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   background-color: #f7f9fa;
-  /* Desktop background */
+  height: -webkit-fill-available;
 }
 
 body {
-  max-width: 480px;
   margin: 0 auto;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   background-color: var(--background-white);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   overflow-x: hidden;
-  overflow-y: auto;
   font-family: var(--font-noto-sans-kr), sans-serif;
   color: var(--text-black);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Desktop framework simulation */
+@media (min-width: 481px) {
+  body {
+    max-width: 480px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.mobile-app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
 }
 
 main {
-  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 a {
@@ -47,8 +75,20 @@ button {
   background: none;
   cursor: pointer;
   font-family: inherit;
+  user-select: none;
 }
 
 ul {
   list-style: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Scrollbar hidden for app-like feeilng */
+::-webkit-scrollbar {
+  display: none;
 }

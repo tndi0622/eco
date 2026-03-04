@@ -11,12 +11,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 });
     }
 
+    /* 
     const apiKey = process.env.KAKAO_REST_API_KEY;
-
     if (!apiKey) {
         console.error('KAKAO_REST_API_KEY is not defined in environment variables');
         return NextResponse.json({ error: 'API 키 설정이 누락되었습니다' }, { status: 500 });
     }
+    */
 
     try {
         // 1. Photon API (가장 안정적이고 제한이 적음)

@@ -2,18 +2,16 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.8rem 2rem;
+    padding: 0.8rem 2rem calc(0.8rem + var(--sab));
     background-color: var(--background-white);
     border-top: 1px solid #F2F2F2;
     position: fixed;
     bottom: 0;
     width: 100%;
     max-width: 480px;
-    /* Match body max-width */
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
-    padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
 }
 
 .item {

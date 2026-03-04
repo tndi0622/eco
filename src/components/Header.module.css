@@ -2,7 +2,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: calc(1rem + var(--sat)) 1.5rem 1rem;
     background-color: var(--background-white);
     border-bottom: 1px solid #F2F2F2;
     position: sticky;

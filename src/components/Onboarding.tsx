@@ -38,22 +38,28 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         if (step === 1) {
             // 위치 설정 단계
             setIsLoading(true);
-            const { address, coordinates, error } = await detectLocation();
-            setIsLoading(false);
+            try {
+                const { address, coordinates, error } = await detectLocation();
 
-            if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
-                // 성공 - 자동으로 '우리 집'으로 저장
-                // 좌표를 전달하면 나중에 날씨/지도 기능 추가 시 더 잘 작동함
-                addFavorite("우리 집", address, coordinates || undefined);
+                if (!error && address && !address.includes('실패') && !address.includes('미지원') && !address.includes('보안')) {
+                    // 성공 - 자동으로 '우리 집'으로 저장
+                    addFavorite("우리 집", address, coordinates || undefined);
+                    setStep(step + 1);
+                } else {
+                    // 실패 또는 특수 메시지 (보안 연결 등)
+                    const errorMsg = error || "위치 확인에 실패했습니다.";
+                    alert(`${errorMsg}\n나중에 설정에서 직접 등록하실 수 있습니다.`);
+                    setStep(step + 1);
+                }
+            } catch (err) {
+                console.error("Onboarding location error:", err);
+                alert("위치 확인 중 오류가 발생했습니다. 나중에 다시 시도해주세요.");
                 setStep(step + 1);
-            } else {
-                // 실패 - 다음으로 이동 (나중에 수동 설정으로 폴백)
-                alert("위치 확인에 실패했습니다. 나중에 설정에서 직접 등록해주세요.");
-                setStep(step + 1);
+            } finally {
+                setIsLoading(false);
             }
         } else if (step === 2) {
-            // 마지막 단계
-            // 새 사용자의 알림을 기본적으로 비활성화함
+            // 마지막 단계 - 저장 및 완료
             const defaultSettings = { general: false, recycle: false, food: false };
             localStorage.setItem('notificationSettings', JSON.stringify(defaultSettings));
             onComplete();

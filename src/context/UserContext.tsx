@@ -11,6 +11,7 @@ interface UserContextType {
     isAdmin: boolean;
     subscriptionExpiry: string | null;
     adTokensToday: number;
+    loading: boolean;
     useToken: (cost?: number) => Promise<boolean>;
     addAdToken: () => Promise<boolean>;
     purchaseTokens: (count: number) => Promise<void>;
@@ -38,7 +39,7 @@ declare global {
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [tokens, setTokens] = useState<number>(1);
+    const [tokens, setTokens] = useState<number>(5); // Increased for testing and new users (was 1)
     const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
     const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
@@ -351,22 +352,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const contextValue = React.useMemo(() => ({
+        user,
+        tokens,
+        isSubscribed,
+        isAdmin,
+        subscriptionExpiry,
+        adTokensToday,
+        useToken,
+        addAdToken,
+        purchaseTokens,
+        subscribe,
+        unsubscribe,
+        loginWithGoogle,
+        logout,
+        loading
+    }), [user, tokens, isSubscribed, isAdmin, subscriptionExpiry, adTokensToday, loading]);
+
     return (
-        <UserContext.Provider value={{
-            user,
-            tokens,
-            isSubscribed,
-            isAdmin,
-            subscriptionExpiry,
-            adTokensToday,
-            useToken,
-            addAdToken,
-            purchaseTokens,
-            subscribe,
-            unsubscribe,
-            loginWithGoogle,
-            logout
-        }}>
+        <UserContext.Provider value={contextValue}>
             {!loading && children}
         </UserContext.Provider>
     );

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
@@ -17,8 +17,24 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: 'Eco Application',
-  description: 'Neighborhood eco application',
+  title: '에코(Eco) - 똑똑한 분리배출',
+  description: '우리 동네 분리배출 규칙부터 AI 품목 식별까지, 에코와 함께 시작하세요.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Eco',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -40,10 +56,12 @@ export default function RootLayout({
         <LocationProvider>
           <UserProvider>
             <ChatProvider>
-              <NotificationManager />
-              <Header />
-              <main>{children}</main>
-              <BottomNav />
+              <div className="mobile-app-layout">
+                <NotificationManager />
+                <Header />
+                <main>{children}</main>
+                <BottomNav />
+              </div>
             </ChatProvider>
           </UserProvider>
         </LocationProvider>
