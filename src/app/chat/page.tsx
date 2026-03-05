@@ -296,9 +296,58 @@ function ChatContent() {
         };
     };
 
-    const handleCameraClick = () => {
+    const processImageResult = (base64Data: string, mimeType: string) => {
+        const fullBase64 = `data:${mimeType};base64,${base64Data}`;
+
+        addMessage({
+            id: Date.now(),
+            type: 'user',
+            content: (
+                <div>
+                    <img
+                        src={fullBase64}
+                        alt="Captured"
+                        style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
+                    />
+                    <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
+                </div>
+            )
+        });
+        fetchRecycleInfo("image", base64Data, mimeType);
+    };
+
+    const handleCameraClick = async () => {
         setShowAttachMenu(false);
-        fileInputRef.current?.click();
+        // window 객체의 flutter_inappwebview가 있는지 확인 (앱 여부 판단)
+        const isApp = (window as any).flutter_inappwebview !== undefined;
+        if (isApp) {
+            // 토큰 체크
+            if (!isSubscribed && tokens < 2 && !isAdmin) {
+                setShowTokenModal(true);
+                return;
+            }
+
+            try {
+                // 네이티브 핸들러 호출
+                const result = await (window as any).flutter_inappwebview.callHandler('takePhoto');
+
+                if (result && result.success) {
+                    const hasToken = await useToken(2);
+                    if (hasToken) {
+                        processImageResult(result.base64, result.mimeType);
+                    } else {
+                        setShowTokenModal(true);
+                    }
+                }
+            } catch (error) {
+                console.error("Native Bridge Error", error);
+                // 에러 발생 시 최후의 수단으로 기존 input 시도
+                fileInputRef.current?.click();
+            }
+        } else {
+            // PC나 일반 웹브라우저인 경우 기존 방식 유지
+            fileInputRef.current?.click();
+        }
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,23 +369,7 @@ function ChatContent() {
                 if (matches) {
                     const mimeType = matches[1];
                     const base64Data = matches[2];
-
-                    addMessage({
-                        id: Date.now(),
-                        type: 'user',
-                        content: (
-                            <div>
-                                <img
-                                    src={base64}
-                                    alt="Uploaded Waste"
-                                    style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                                />
-                                <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
-                            </div>
-                        )
-                    });
-
-                    fetchRecycleInfo("image", base64Data, mimeType);
+                    processImageResult(base64Data, mimeType);
                 }
             } else {
                 setShowTokenModal(true);
@@ -362,23 +395,7 @@ function ChatContent() {
                     if (matches) {
                         const mimeType = matches[1];
                         const base64Data = matches[2];
-
-                        addMessage({
-                            id: Date.now(),
-                            type: 'user',
-                            content: (
-                                <div>
-                                    <img
-                                        src={pendingImage}
-                                        alt="Uploaded Waste"
-                                        style={{ maxWidth: '100%', borderRadius: '12px', marginBottom: '8px', display: 'block' }}
-                                    />
-                                    <span>📷 사진을 분석중입니다 (2토큰 사용)</span>
-                                </div>
-                            )
-                        });
-
-                        fetchRecycleInfo("image", base64Data, mimeType);
+                        processImageResult(base64Data, mimeType);
                     }
                 } else {
                     setShowTokenModal(true);
