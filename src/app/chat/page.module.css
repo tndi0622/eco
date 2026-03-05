@@ -712,3 +712,10 @@
     color: #000;
     transform: translateY(-2px);
 }
+
+.disabledRecharge {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(1) !important;
+    pointer-events: none !important;
+}

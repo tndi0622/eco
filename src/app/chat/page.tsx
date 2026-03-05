@@ -624,53 +624,34 @@ function ChatContent() {
 
                                 <div className={styles.rechargeGrid}>
                                     <button
-                                        className={`${styles.rechargeBtn} ${styles.rewardBtn} ${isSubscribed ? styles.subscribedBtn : ''}`}
-                                        onClick={isSubscribed ? undefined : handleWatchAd}
-                                        disabled={isSubscribed || isAdLoading}
+                                        className={`${styles.rechargeBtn} ${styles.rewardBtn} ${styles.disabledRecharge}`}
+                                        disabled={true}
                                     >
                                         <div className={styles.rechargeLabel}>
                                             📺 <span>광고 보고 충전</span>
                                         </div>
-                                        <span className={styles.rechargeValue} style={{ color: isSubscribed ? '#999' : 'white' }}>
-                                            {isSubscribed ? '무제한 이용 중' : `무료 (오늘 ${adTokensToday}/3)`}
-                                        </span>
+                                        <span className={styles.rechargeValue}>일시 중지</span>
                                     </button>
 
                                     <button
-                                        className={`${styles.rechargeBtn} ${isSubscribed ? styles.subscribedBtn : ''}`}
-                                        onClick={() => {
-                                            if (isSubscribed) return;
-                                            if (confirm('토큰 10개를 1,100원에 구매하시겠습니까?')) {
-                                                purchaseTokens(10);
-                                                setShowTokenModal(false);
-                                                alert('구매 완료!');
-                                            }
-                                        }}
-                                        disabled={isSubscribed}
+                                        className={`${styles.rechargeBtn} ${styles.disabledRecharge}`}
+                                        disabled={true}
                                     >
                                         <div className={styles.rechargeLabel}>
                                             💎 <span>토큰 10개 구매</span>
                                         </div>
-                                        <span className={styles.rechargeValue}>{isSubscribed ? '혜택 적용 중' : '₩1,100'}</span>
+                                        <span className={styles.rechargeValue}>준비 중</span>
                                     </button>
 
                                     <button
-                                        className={`${styles.rechargeBtn} ${isSubscribed ? styles.subscribedBtn : ''}`}
-                                        style={{ borderColor: isSubscribed ? '#e0e0e0' : '#10B981' }}
-                                        onClick={() => {
-                                            if (isSubscribed) return;
-                                            if (confirm('월 2,900원에 프리미엄 멤버십을 시작하시겠습니까?')) {
-                                                subscribe();
-                                                setShowTokenModal(false);
-                                                alert('프리미엄 회원이 되신 것을 환영합니다!');
-                                            }
-                                        }}
-                                        disabled={isSubscribed}
+                                        className={`${styles.rechargeBtn} ${styles.disabledRecharge}`}
+                                        disabled={true}
+                                        style={{ borderColor: '#e0e0e0' }}
                                     >
                                         <div className={styles.rechargeLabel}>
-                                            ✨ <span>{isSubscribed ? '에코 프로 이용 중' : '에코 프로 구독'}</span>
+                                            ✨ <span>에코 프로 구독</span>
                                         </div>
-                                        <span className={styles.rechargeValue}>{isSubscribed ? '프리미엄 회원' : '월 ₩2,900'}</span>
+                                        <span className={styles.rechargeValue}>준비 중</span>
                                     </button>
                                 </div>
 
