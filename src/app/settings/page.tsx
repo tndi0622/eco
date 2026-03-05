@@ -458,11 +458,23 @@ export default function Settings() {
             {showStoreModal && (
                 <StoreModal onClose={() => setShowStoreModal(false)} />
             )}
+            {/* Information Section */}
+            <section className={styles.section}>
+                <div className={styles.header}>정보</div>
+                <div className={styles.infoList}>
+                    <a href="/privacy_policy.html" target="_blank" rel="noopener noreferrer" className={styles.infoItem}>
+                        <span>개인정보처리방침</span>
+                        <span className={styles.arrowTarget}>&rsaquo;</span>
+                    </a>
+                </div>
+            </section>
+
             {/* Ad Section at the bottom */}
             <section style={{ marginTop: '40px', paddingBottom: '20px' }}>
                 <div style={{ fontSize: '0.7rem', color: '#ccc', textAlign: 'center', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>ADVERTISEMENT</div>
                 <AdBanner dataAdSlot="YOUR_AD_SLOT_ID" />
             </section>
+
         </div>
     );
 }
