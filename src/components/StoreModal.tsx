@@ -68,7 +68,7 @@ export default function StoreModal({ onClose }: StoreModalProps) {
                                 <span className={styles.premiumTitle}>에코 프로 구독</span>
                             </div>
                             <p className={styles.premiumDesc}>
-                                광고 없이 무제한 질문, 배출 요일 알림 서비스 등 모든 기능을 자유롭게 이용하세요.
+                                광고 없이 무제한 질문 등 모든 기능을 자유롭게 이용하세요.
                             </p>
                             <button className={styles.subscribeBtn} disabled style={{ backgroundColor: '#ccc', cursor: 'default' }}>
                                 준비중

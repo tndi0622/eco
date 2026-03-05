@@ -83,10 +83,6 @@ export default function Calendar() {
     };
 
     const handleToggleNotification = (key: 'general' | 'recycle' | 'food') => {
-        if (!isSubscribed) {
-            alert('배출 알림은 프리미엄 멤버십 전용 기능입니다. ✨');
-            return;
-        }
 
         const nextValue = !notificationSettings[key];
         let nextSettings = { ...notificationSettings, [key]: nextValue };
@@ -101,7 +97,6 @@ export default function Calendar() {
     };
 
     const handleDayToggle = (key: 'general' | 'recycle' | 'food', dayIdx: number) => {
-        if (!isSubscribed) return;
         const daysKey = `${key}Days` as keyof typeof notificationSettings;
         const currentDays = notificationSettings[daysKey] as number[];
         let nextDays: number[];
@@ -124,7 +119,6 @@ export default function Calendar() {
     };
 
     const handleTimeChange = (key: 'general' | 'recycle' | 'food', time: string) => {
-        if (!isSubscribed) return;
         const timeKey = `${key}Time` as keyof typeof notificationSettings;
         let nextSettings = { ...notificationSettings, [timeKey]: time };
 
@@ -430,7 +424,6 @@ export default function Calendar() {
                             </div>
                         ))}
                     </div>
-                    {!isSubscribed && <div className={styles.premiumBadgeCal}>PREMIUM</div>}
                 </div>
             </section>
 
