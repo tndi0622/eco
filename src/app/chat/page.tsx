@@ -540,7 +540,24 @@ function ChatContent() {
                     ))
                 )}
                 {isThinking && <ChatSkeleton avatarUrl={loadingMascot} />}
-                {isListening && <div className={styles.listeningOverlay}>🎤 듣고 있어요...</div>}
+                {isListening && (
+                    <div className={styles.listeningOverlay}>
+                        <div className={styles.listeningContent}>
+                            <div className={styles.waveContainer}>
+                                <div className={styles.wave}></div>
+                                <div className={styles.wave}></div>
+                                <div className={styles.wave}></div>
+                            </div>
+                            <div className={styles.listeningText}>
+                                <span className={styles.micIcon}>🎤</span>
+                                듣고 있어요...
+                            </div>
+                            <button className={styles.stopListeningBtn} onClick={() => setIsListening(false)}>
+                                완료
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 

@@ -52,9 +52,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        if (!saved) {
-            detectLocation(); // 위치 정보가 없는 경우 첫 로드 시 자동 감지
-        }
+        // 앱 진입 시 자동 감지는 온보딩과 충돌할 수 있으므로 제거하거나 
+        // 권한이 이미 있는 경우에만 동작하도록 하는 것이 좋습니다.
+        // 현재는 온보딩에서의 안정성을 위해 제거합니다.
     }, []);
 
     const setLocation = (loc: string) => {
@@ -140,6 +140,11 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     };
 
     const detectLocation = (): Promise<{ address: string, coordinates: { lat: number; lng: number } | null, error?: string }> => {
+        // 이미 로딩 중이면 중복 요청 방지
+        if (isLoading) {
+            return Promise.resolve({ address: location, coordinates: coordinates, error: "이미 위치를 확인 중입니다." });
+        }
+
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
                 const msg = "위치 권한 미지원";
@@ -157,6 +162,10 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                 resolve({ address: msg, coordinates: null, error: msg });
                 return;
             }
+
+            // 너무 빠른 클릭에 대비해 약간의 예열 시간을 가질 수도 있지만, 
+            // navigator.geolocation 호출 자체가 비동기이므로 
+            // 중복 실행 방지가 가장 중요합니다.
 
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
@@ -176,20 +185,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                         let addr = "";
                         if (data.address) {
                             const a = data.address;
-                            // 광역단체: 경기도, 서울특별시 등
                             const province = a.province || a.city || a.state || "";
-                            // 기초단체: 수원시, 강남구 등
                             const city = a.city || a.county || a.district || "";
-                            // 구: 영통구 등 (city_district가 있는 경우)
                             const district = a.city_district || "";
-                            // 동/읍/면: 영통동, 매탄동 등
                             const town = a.town || a.village || a.suburb || a.neighbourhood || a.hamlet || "";
-                            // 도로명/지번
                             const road = a.road || a.pedestrian || "";
                             const houseNumber = a.house_number || "";
                             const building = a.building || a.amenity || a.office || "";
 
-                            // 주소 조각 모으기 (중복 제거 포함)
                             const parts: string[] = [];
                             if (province) parts.push(province);
                             if (city && city !== province) parts.push(city);
@@ -224,6 +227,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
                     console.error("Geolocation error", error);
                     let msg = "위치 파악 실패";
                     if (error.code === 1) msg = "위치 권한을 허용해주세요";
+                    else if (error.code === 2) msg = "위치 정보를 사용할 수 없습니다 (GPS 확인 필요)";
                     else if (error.code === 3) msg = "위치 확인 시간 초과";
 
                     setLocation(msg);

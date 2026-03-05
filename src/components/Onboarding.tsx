@@ -10,14 +10,13 @@ interface OnboardingProps {
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
     const [step, setStep] = useState(0);
-    const { detectLocation, addFavorite } = useLocation();
-    const [isLoading, setIsLoading] = useState(false);
+    const { detectLocation, addFavorite, isLoading: isLocationLoading } = useLocation();
 
     const steps = [
         {
             title: "이사 온 첫날,\n쓰레기 배출 막막하시죠?",
             desc: "지역마다 다른 배출 요일과 방법,\n에코도우미가 싹- 정리해드릴게요.",
-            image: "🗑️", // 실제 이미지의 플레이스홀더
+            image: "🗑️",
             btnText: "다음으로"
         },
         {
@@ -37,23 +36,23 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     const handleNext = async () => {
         if (step === 1) {
             // 위치 설정 단계
-            setIsLoading(true);
             const { address, coordinates, error } = await detectLocation();
-            setIsLoading(false);
 
             if (!error && address && !address.includes('실패') && !address.includes('미지원')) {
                 // 성공 - 자동으로 '우리 집'으로 저장
-                // 좌표를 전달하면 나중에 날씨/지도 기능 추가 시 더 잘 작동함
                 addFavorite("우리 집", address, coordinates || undefined);
                 setStep(step + 1);
             } else {
-                // 실패 - 다음으로 이동 (나중에 수동 설정으로 폴백)
-                alert("위치 확인에 실패했습니다. 나중에 설정에서 직접 등록해주세요.");
+                // 이미 로딩 중인 경우(중복 클릭 등)에는 무시하거나 기다림
+                if (error === "이미 위치를 확인 중입니다.") return;
+
+                // 실패 - 사용자에게 알림 (여기서는 다음 단계로 넘기지 않고 머무르게 할 수도 있지만, 
+                // 기존 기획대로 다음으로 넘기되 메세지만 보여줌)
+                alert(error || "위치 확인에 실패했습니다. 나중에 설정에서 직접 등록해주세요.");
                 setStep(step + 1);
             }
         } else if (step === 2) {
             // 마지막 단계
-            // 새 사용자의 알림을 기본적으로 비활성화함
             const defaultSettings = { general: false, recycle: false, food: false };
             localStorage.setItem('notificationSettings', JSON.stringify(defaultSettings));
             onComplete();
@@ -104,9 +103,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 <button
                     className={`${styles.actionBtn} ${styles.primaryBtn}`}
                     onClick={handleNext}
-                    disabled={isLoading}
+                    disabled={isLocationLoading}
                 >
-                    {isLoading ? '위치 확인 중...' : steps[step].btnText}
+                    {isLocationLoading ? '위치 확인 중...' : steps[step].btnText}
                 </button>
             </div>
         </div>
